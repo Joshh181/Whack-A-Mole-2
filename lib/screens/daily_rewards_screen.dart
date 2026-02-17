@@ -52,7 +52,11 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     const Text(
@@ -140,10 +144,10 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                       padding: const EdgeInsets.all(16),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
                       itemCount: shopProvider.dailyRewards.length,
                       itemBuilder: (context, index) {
                         final reward = shopProvider.dailyRewards[index];
@@ -151,7 +155,8 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                         // This day is the one currently available to claim
                         final isNextDay = reward.day == nextDay;
                         // Can tap only if it's today's day AND 24h passed AND not already claimed
-                        final canTap = isNextDay && canClaim && !reward.isClaimed;
+                        final canTap =
+                            isNextDay && canClaim && !reward.isClaimed;
 
                         return GestureDetector(
                           onTap: canTap
@@ -175,19 +180,31 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: canTap
-                                    ? [Colors.yellow, Colors.orange]       // claimable today
+                                    ? [
+                                        Colors.yellow,
+                                        Colors.orange,
+                                      ] // claimable today
                                     : reward.isClaimed
-                                        ? [Colors.blue.shade200, Colors.purple.shade200] // already claimed
-                                        : isNextDay
-                                            ? [Colors.grey.shade300, Colors.grey.shade400] // waiting 24h
-                                            : [Colors.white, Colors.white], // future/locked
+                                    ? [
+                                        Colors.blue.shade200,
+                                        Colors.purple.shade200,
+                                      ] // already claimed
+                                    : isNextDay
+                                    ? [
+                                        Colors.grey.shade300,
+                                        Colors.grey.shade400,
+                                      ] // waiting 24h
+                                    : [
+                                        Colors.white,
+                                        Colors.white,
+                                      ], // future/locked
                               ),
                               borderRadius: BorderRadius.circular(20),
                               border: canTap
                                   ? Border.all(color: Colors.amber, width: 3)
                                   : isNextDay && !reward.isClaimed
-                                      ? Border.all(color: Colors.grey, width: 2)
-                                      : null,
+                                  ? Border.all(color: Colors.grey, width: 2)
+                                  : null,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -204,8 +221,11 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 reward.isClaimed
-                                    ? const Icon(Icons.check_circle,
-                                        color: Colors.white, size: 50)
+                                    ? const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.white,
+                                        size: 50,
+                                      )
                                     : Text(
                                         reward.iconEmoji,
                                         style: const TextStyle(fontSize: 50),
@@ -214,8 +234,10 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text('🪙',
-                                        style: TextStyle(fontSize: 20)),
+                                    const Text(
+                                      '🪙',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${reward.coins}',
@@ -234,10 +256,10 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                                   reward.isClaimed
                                       ? 'CLAIMED ✓'
                                       : canTap
-                                          ? 'TAP TO CLAIM!'
-                                          : isNextDay
-                                              ? 'WAITING 24H...'
-                                              : 'LOCKED 🔒',
+                                      ? 'TAP TO CLAIM!'
+                                      : isNextDay
+                                      ? 'WAITING 24H...'
+                                      : 'LOCKED 🔒',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
