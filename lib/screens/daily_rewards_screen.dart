@@ -26,9 +26,8 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
   }
 
   void _startRefreshTimer() {
-    // Refresh every second to check if 24 hours have passed
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {});
+      if (mounted) setState(() {});
     });
   }
 
@@ -46,6 +45,7 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
         child: SafeArea(
           child: Column(
             children: [
+              // Header
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -57,22 +57,28 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                     const SizedBox(width: 16),
                     const Text(
                       'Daily Rewards',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
               ),
-              
-              // Status display (no countdown, just ready or not ready)
+
+              // Status banner
               Consumer<ShopProvider>(
                 builder: (context, shopProvider, child) {
                   final canClaim = shopProvider.canClaimDailyReward();
-                  
+
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: canClaim ? Colors.green.shade400 : Colors.orange.shade300,
+                      color: canClaim
+                          ? Colors.green.shade400
+                          : Colors.orange.shade300,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -92,7 +98,9 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          canClaim ? 'Ready to Claim!' : 'Come Back in 24 Hours',
+                          canClaim
+                              ? 'Day ${shopProvider.nextDayToClaim} Ready to Claim!'
+                              : 'Come Back in 24 Hours',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -104,9 +112,9 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
@@ -120,13 +128,18 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              
+
+              // Rewards grid
               Expanded(
                 child: Consumer<ShopProvider>(
                   builder: (context, shopProvider, child) {
+                    final nextDay = shopProvider.nextDayToClaim;
+                    final canClaim = shopProvider.canClaimDailyReward();
+
                     return GridView.builder(
                       padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
@@ -134,35 +147,47 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                       itemCount: shopProvider.dailyRewards.length,
                       itemBuilder: (context, index) {
                         final reward = shopProvider.dailyRewards[index];
-                        final isToday = index == shopProvider.currentStreak;
-                        final canClaim = shopProvider.canClaimDailyReward() && isToday;
-                        
+
+                        // This day is the one currently available to claim
+                        final isNextDay = reward.day == nextDay;
+                        // Can tap only if it's today's day AND 24h passed AND not already claimed
+                        final canTap = isNextDay && canClaim && !reward.isClaimed;
+
                         return GestureDetector(
-                          onTap: canClaim && !reward.isClaimed
-                              ? () {
-                                  shopProvider.claimDailyReward(reward.day);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('🎉 Claimed ${reward.coins} coins! Come back in 24 hours.'),
-                                      backgroundColor: Colors.green,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
+                          onTap: canTap
+                              ? () async {
+                                  final claimed = await shopProvider
+                                      .claimDailyReward(reward.day);
+                                  if (claimed && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '🎉 Day ${reward.day} claimed! +${reward.coins} coins. Come back in 24 hours.',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
                                 }
                               : null,
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: canClaim
-                                    ? [Colors.yellow, Colors.orange]
+                                colors: canTap
+                                    ? [Colors.yellow, Colors.orange]       // claimable today
                                     : reward.isClaimed
-                                        ? [Colors.blue.shade200, Colors.purple.shade200]
-                                        : [Colors.white, Colors.white],
+                                        ? [Colors.blue.shade200, Colors.purple.shade200] // already claimed
+                                        : isNextDay
+                                            ? [Colors.grey.shade300, Colors.grey.shade400] // waiting 24h
+                                            : [Colors.white, Colors.white], // future/locked
                               ),
                               borderRadius: BorderRadius.circular(20),
-                              border: canClaim
+                              border: canTap
                                   ? Border.all(color: Colors.amber, width: 3)
-                                  : null,
+                                  : isNextDay && !reward.isClaimed
+                                      ? Border.all(color: Colors.grey, width: 2)
+                                      : null,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -172,25 +197,34 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: canClaim || reward.isClaimed ? Colors.white : Colors.black,
+                                    color: (canTap || reward.isClaimed)
+                                        ? Colors.white
+                                        : Colors.black,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
                                 reward.isClaimed
-                                    ? const Icon(Icons.check_circle, color: Colors.white, size: 50)
-                                    : Text(reward.iconEmoji, style: const TextStyle(fontSize: 50)),
+                                    ? const Icon(Icons.check_circle,
+                                        color: Colors.white, size: 50)
+                                    : Text(
+                                        reward.iconEmoji,
+                                        style: const TextStyle(fontSize: 50),
+                                      ),
                                 const SizedBox(height: 12),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text('🪙', style: TextStyle(fontSize: 20)),
+                                    const Text('🪙',
+                                        style: TextStyle(fontSize: 20)),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${reward.coins}',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: canClaim || reward.isClaimed ? Colors.white : Colors.black,
+                                        color: (canTap || reward.isClaimed)
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -198,16 +232,18 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   reward.isClaimed
-                                      ? 'CLAIMED'
-                                      : canClaim
+                                      ? 'CLAIMED ✓'
+                                      : canTap
                                           ? 'TAP TO CLAIM!'
-                                          : isToday
-                                              ? 'WAITING...'
-                                              : 'LOCKED',
+                                          : isNextDay
+                                              ? 'WAITING 24H...'
+                                              : 'LOCKED 🔒',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: canClaim || reward.isClaimed ? Colors.white : Colors.grey,
+                                    color: (canTap || reward.isClaimed)
+                                        ? Colors.white
+                                        : Colors.grey,
                                   ),
                                 ),
                               ],

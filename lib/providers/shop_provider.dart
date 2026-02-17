@@ -10,7 +10,7 @@ class ShopProvider extends ChangeNotifier {
   List<DailyReward> _dailyRewards = [];
   int _coins = 150;
   String? _equippedItem;
-  int _currentStreak = 0;
+  int _currentStreak = 0; // 0 = none claimed yet, 1 = day1 claimed, etc.
   DateTime? _lastClaimDate;
   
   Map<String, int> _powerUpQuantities = {
@@ -21,7 +21,7 @@ class ShopProvider extends ChangeNotifier {
 
   // Public getters
   List<ShopItem> get items => _items;
-  List<ShopItem> get shopItems => _items;  // Alias for compatibility
+  List<ShopItem> get shopItems => _items;
   List<DailyReward> get dailyRewards => _dailyRewards;
   int get coins => _coins;
   int get currentStreak => _currentStreak;
@@ -86,8 +86,8 @@ class ShopProvider extends ChangeNotifier {
 
   void _initializeDailyRewards() {
     _dailyRewards = [
-      DailyReward(day: 1, coins: 50, iconEmoji: '🪙'),
-      DailyReward(day: 2, coins: 75, iconEmoji: '🪙'),
+      DailyReward(day: 1, coins: 50,  iconEmoji: '🪙'),
+      DailyReward(day: 2, coins: 75,  iconEmoji: '🪙'),
       DailyReward(day: 3, coins: 100, iconEmoji: '🪙'),
       DailyReward(day: 4, coins: 150, iconEmoji: '🪙'),
       DailyReward(day: 5, coins: 200, iconEmoji: '🪙'),
@@ -121,18 +121,17 @@ class ShopProvider extends ChangeNotifier {
       try {
         _lastClaimDate = DateTime.parse(lastClaimString);
         
-        // Check if streak should be reset (more than 48 hours)
+        // Check if streak should be reset (more than 48 hours since last claim)
         final now = DateTime.now();
         final difference = now.difference(_lastClaimDate!);
         
         if (difference.inHours > 48) {
-          // Streak broken, reset everything
+          // Streak broken - reset everything back to day 1
           _currentStreak = 0;
           _lastClaimDate = null;
           await _storage.saveDailyStreak(0);
           await _storage.saveLastClaimDate('');
           
-          // Reset all claimed statuses
           for (var r in _dailyRewards) {
             r.isClaimed = false;
             await _storage.saveDailyRewardClaimed(r.day, false);
@@ -221,74 +220,60 @@ class ShopProvider extends ChangeNotifier {
     }
     return false;
   }
-  
-  // Daily Rewards Methods
+
+  // ─── Daily Rewards ───────────────────────────────────────────────────────────
+
+  /// Returns true if 24 hours have passed since last claim (or never claimed)
   bool canClaimDailyReward() {
-    if (_lastClaimDate == null) {
-      return true; // First time claiming
-    }
-    
-    final now = DateTime.now();
-    final difference = now.difference(_lastClaimDate!);
-    
-    // Can claim if 24 hours have passed
-    return difference.inHours >= 24;
+    if (_lastClaimDate == null) return true;
+    final diff = DateTime.now().difference(_lastClaimDate!);
+    return diff.inHours >= 24;
   }
-  
-  DateTime? get nextClaimTime {
-    if (_lastClaimDate == null) {
-      return null; // Can claim now
-    }
-    
-    final nextClaim = _lastClaimDate!.add(const Duration(hours: 24));
-    final now = DateTime.now();
-    
-    if (now.isAfter(nextClaim)) {
-      return null; // Can claim now
-    }
-    
-    return nextClaim;
+
+  /// The next day the player should claim (1-based). 
+  /// After day 7 it wraps back to 1.
+  int get nextDayToClaim {
+    // _currentStreak is how many days have been claimed so far.
+    // So the NEXT day is _currentStreak + 1, wrapped to 1-7.
+    int next = (_currentStreak % 7) + 1;
+    return next;
   }
-  
-  // Method for claiming daily rewards
-  Future<void> claimDailyReward(int day) async {
-    if (!canClaimDailyReward()) {
-      return; // Cannot claim yet
-    }
-    
-    if (day == _currentStreak + 1 && day <= _dailyRewards.length) {
-      final reward = _dailyRewards[day - 1];
-      
-      if (!reward.isClaimed) {
-        // Add coins
-        addCoins(reward.coins);
-        
-        // Mark as claimed
-        reward.isClaimed = true;
-        await _storage.saveDailyRewardClaimed(day, true);
-        
-        // Update streak
-        _currentStreak = day;
-        await _storage.saveDailyStreak(_currentStreak);
-        
-        // Update last claim date
-        _lastClaimDate = DateTime.now();
-        await _storage.saveLastClaimDate(_lastClaimDate!.toIso8601String());
-        
-        // Reset streak if it was day 7
-        if (day == 7) {
-          _currentStreak = 0;
-          await _storage.saveDailyStreak(0);
-          
-          // Reset all claimed statuses
-          for (var r in _dailyRewards) {
-            r.isClaimed = false;
-            await _storage.saveDailyRewardClaimed(r.day, false);
-          }
-        }
-        
-        notifyListeners();
+
+  /// Claim today's reward. `day` must equal nextDayToClaim.
+  Future<bool> claimDailyReward(int day) async {
+    // Guard: must be the correct next day and 24h must have passed
+    if (!canClaimDailyReward()) return false;
+    if (day != nextDayToClaim) return false;
+
+    final reward = _dailyRewards[day - 1]; // list is 0-indexed
+    if (reward.isClaimed) return false;
+
+    // Give coins
+    addCoins(reward.coins);
+
+    // Mark this day as claimed in memory + storage
+    reward.isClaimed = true;
+    await _storage.saveDailyRewardClaimed(day, true);
+
+    // Advance streak counter
+    _currentStreak++;
+    await _storage.saveDailyStreak(_currentStreak);
+
+    // Record when we claimed
+    _lastClaimDate = DateTime.now();
+    await _storage.saveLastClaimDate(_lastClaimDate!.toIso8601String());
+
+    // After day 7 completed, reset so the whole cycle can start again
+    if (_currentStreak % 7 == 0) {
+      // Keep _currentStreak as-is (it's a multiple of 7 now) so nextDayToClaim
+      // wraps back to day 1, but clear all isClaimed flags for the new cycle.
+      for (var r in _dailyRewards) {
+        r.isClaimed = false;
+        await _storage.saveDailyRewardClaimed(r.day, false);
       }
     }
+
+    notifyListeners();
+    return true;
   }
 }
