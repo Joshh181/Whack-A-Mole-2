@@ -93,6 +93,8 @@ class ShopScreen extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final item = shopProvider.shopItems[index];
                         final canBuy = !item.isUnlocked && shopProvider.coins >= item.price;
+                        final isSkin = item.imagePath != null;
+                        
                         return GestureDetector(
                           onTap: canBuy
                               ? () {
@@ -115,6 +117,7 @@ class ShopScreen extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                // Item icon/image
                                 Container(
                                   width: 80,
                                   height: 80,
@@ -123,7 +126,17 @@ class ShopScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(15),
                                   ),
                                   child: Center(
-                                    child: Text(item.iconEmoji, style: const TextStyle(fontSize: 50)),
+                                    child: isSkin
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(10),
+                                            child: Image.asset(
+                                              item.imagePath!,
+                                              width: 70,
+                                              height: 70,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          )
+                                        : Text(item.iconEmoji, style: const TextStyle(fontSize: 50)),
                                   ),
                                 ),
                                 const SizedBox(height: 12),

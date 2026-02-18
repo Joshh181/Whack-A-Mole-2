@@ -166,10 +166,10 @@ class _GameScreenState extends State<GameScreen> {
     int columns = widget.level.gridColumns;
     
     if (!isActive) {
-      return 500.0; // ✅ FIXED: FAR below - completely hidden
+      return 500.0; // Hidden far below
     }
     
-    // Active position - same for both mole and bomb
+    // Active position
     if (columns == 3) {
       return -30.0; // Level 1-2
     } else if (columns == 4) {
@@ -179,7 +179,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // Calculate bomb size based on grid columns - INCREASED SIZE
+  // Calculate bomb size based on grid columns
   double _getBombSize() {
     int columns = widget.level.gridColumns;
     
@@ -192,12 +192,12 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // Calculate bomb top position - ADJUSTED TO CENTER BETTER
+  // Calculate bomb top position
   double _getBombTopPosition(bool isActive) {
     int columns = widget.level.gridColumns;
     
     if (!isActive) {
-      return 500.0; // ✅ FIXED: FAR below - completely hidden
+      return 500.0; // Hidden far below
     }
     
     // Adjusted positions to center the bomb better
@@ -207,6 +207,19 @@ class _GameScreenState extends State<GameScreen> {
       return 0.0;
     } else {
       return 5.0;
+    }
+  }
+
+  // Calculate skin position offset based on grid columns
+  double _getSkinPositionOffset() {
+    int columns = widget.level.gridColumns;
+    
+    if (columns == 3) {
+      return 20.0; // Level 1-2: Move down 20px
+    } else if (columns == 4) {
+      return 15.0; // Level 3-4: Move down 15px
+    } else {
+      return 12.0; // Level 5: Move down 12px
     }
   }
 
@@ -412,6 +425,7 @@ class _GameScreenState extends State<GameScreen> {
     final moleTopPosition = _getTopPosition(isMoleActive);
     final bombSize = _getBombSize();
     final bombTopPosition = _getBombTopPosition(isMoleActive);
+    final skinPositionOffset = _getSkinPositionOffset();
     
     return GestureDetector(
       onTap: () {
@@ -441,7 +455,7 @@ class _GameScreenState extends State<GameScreen> {
             'assets/images/HOLE.png',
             fit: BoxFit.contain,
           ),
-          // Mole OR Bomb - using different positions now
+          // Mole OR Bomb
           if (hasBomb)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 400),
@@ -457,18 +471,36 @@ class _GameScreenState extends State<GameScreen> {
               ),
             )
           else
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOut,
-              top: moleTopPosition,
-              child: Center(
-                child: Image.asset(
-                  'assets/images/33121063782.png',
-                  width: moleSize,
-                  height: moleSize,
-                  fit: BoxFit.contain,
-                ),
-              ),
+            Consumer<ShopProvider>(
+              builder: (context, shopProvider, child) {
+                final moleImagePath = shopProvider.getMoleImagePath();
+                
+                // Check if it's a skin (not the original mole)
+                final isOriginalMole = moleImagePath.contains('33121063782.png');
+                
+                // Use smaller size for skins (60% of original size)
+                final adjustedSize = isOriginalMole ? moleSize : moleSize * 0.60;
+                
+                // Adjust position for skins - move them down to center better
+                // Position offset scales with level (larger offset for bigger moles)
+                final adjustedTopPosition = isOriginalMole 
+                    ? moleTopPosition 
+                    : moleTopPosition + skinPositionOffset;
+                
+                return AnimatedPositioned(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
+                  top: adjustedTopPosition,
+                  child: Center(
+                    child: Image.asset(
+                      moleImagePath,
+                      width: adjustedSize,
+                      height: adjustedSize,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),

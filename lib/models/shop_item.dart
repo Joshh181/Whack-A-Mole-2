@@ -7,6 +7,7 @@ class ShopItem {
   final String iconEmoji;
   final ShopItemType type;
   final String? description;
+  final String? imagePath; // NEW: Path to skin image
   bool isUnlocked;
 
   ShopItem({
@@ -16,6 +17,7 @@ class ShopItem {
     required this.iconEmoji,
     required this.type,
     this.description,
+    this.imagePath, // NEW: Optional image path for skins
     this.isUnlocked = false,
   });
 
@@ -27,6 +29,7 @@ class ShopItem {
       'iconEmoji': iconEmoji,
       'type': type.toString(),
       'description': description,
+      'imagePath': imagePath,
       'isUnlocked': isUnlocked,
     };
   }
@@ -41,6 +44,7 @@ class ShopItem {
           ? ShopItemType.customization 
           : ShopItemType.powerUp,
       description: json['description'],
+      imagePath: json['imagePath'],
       isUnlocked: json['isUnlocked'] ?? false,
     );
   }

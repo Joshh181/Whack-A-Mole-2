@@ -9,8 +9,8 @@ class ShopProvider extends ChangeNotifier {
   List<ShopItem> _items = [];
   List<DailyReward> _dailyRewards = [];
   int _coins = 150;
-  String? _equippedItem;
-  int _currentStreak = 0; // 0 = none claimed yet, 1 = day1 claimed, etc.
+  String? _equippedSkin; // Changed from _equippedItem to _equippedSkin
+  int _currentStreak = 0;
   DateTime? _lastClaimDate;
   
   Map<String, int> _powerUpQuantities = {
@@ -25,7 +25,8 @@ class ShopProvider extends ChangeNotifier {
   List<DailyReward> get dailyRewards => _dailyRewards;
   int get coins => _coins;
   int get currentStreak => _currentStreak;
-  String? get equippedItem => _equippedItem;
+  String? get equippedItem => _equippedSkin; // For backward compatibility
+  String? get equippedSkin => _equippedSkin;
 
   ShopProvider() {
     _initializeShop();
@@ -34,27 +35,45 @@ class ShopProvider extends ChangeNotifier {
 
   void _initializeShop() {
     _items = [
+      // ═══ MOLE SKINS ═══
       ShopItem(
-        id: 'party_hat',
-        name: 'Party Hat',
-        price: 50,
-        iconEmoji: '🎩',
-        type: ShopItemType.customization,
-      ),
-      ShopItem(
-        id: 'crown',
-        name: 'Crown',
+        id: 'skin_cowboy',
+        name: 'Cowboy Mole',
         price: 100,
-        iconEmoji: '👑',
+        iconEmoji: '🤠',
+        imagePath: 'assets/images/cowboy.png',
         type: ShopItemType.customization,
+        description: 'Yeehaw partner!',
       ),
       ShopItem(
-        id: 'sunglasses',
-        name: 'Sunglasses',
-        price: 75,
-        iconEmoji: '🕶️',
+        id: 'skin_wizard',
+        name: 'Wizard Mole',
+        price: 150,
+        iconEmoji: '🧙',
+        imagePath: 'assets/images/wizard.png',
         type: ShopItemType.customization,
+        description: 'Magical mole!',
       ),
+      ShopItem(
+        id: 'skin_pirate',
+        name: 'Pirate Mole',
+        price: 125,
+        iconEmoji: '🏴‍☠️',
+        imagePath: 'assets/images/pirate.png',
+        type: ShopItemType.customization,
+        description: 'Ahoy matey!',
+      ),
+      ShopItem(
+        id: 'skin_ninja',
+        name: 'Ninja Mole',
+        price: 175,
+        iconEmoji: '🥷',
+        imagePath: 'assets/images/ninja.png',
+        type: ShopItemType.customization,
+        description: 'Silent and deadly!',
+      ),
+      
+      // ═══ POWER-UPS ═══
       ShopItem(
         id: 'extra_time',
         name: 'Extra Time',
@@ -107,7 +126,7 @@ class ShopProvider extends ChangeNotifier {
       }
     }
     
-    _equippedItem = await _storage.getEquippedItem();
+    _equippedSkin = await _storage.getEquippedItem();
     _powerUpQuantities = await _storage.getPowerUpQuantities();
     
     notifyListeners();
@@ -121,12 +140,10 @@ class ShopProvider extends ChangeNotifier {
       try {
         _lastClaimDate = DateTime.parse(lastClaimString);
         
-        // Check if streak should be reset (more than 48 hours since last claim)
         final now = DateTime.now();
         final difference = now.difference(_lastClaimDate!);
         
         if (difference.inHours > 48) {
-          // Streak broken - reset everything back to day 1
           _currentStreak = 0;
           _lastClaimDate = null;
           await _storage.saveDailyStreak(0);
@@ -143,7 +160,6 @@ class ShopProvider extends ChangeNotifier {
       }
     }
     
-    // Load claimed status for each day
     for (var reward in _dailyRewards) {
       reward.isClaimed = await _storage.getDailyRewardClaimed(reward.day);
     }
@@ -160,8 +176,8 @@ class ShopProvider extends ChangeNotifier {
         .toList();
     await _storage.saveUnlockedItems(unlockedIds);
     
-    if (_equippedItem != null) {
-      await _storage.saveEquippedItem(_equippedItem!);
+    if (_equippedSkin != null) {
+      await _storage.saveEquippedItem(_equippedSkin!);
     }
     
     await _storage.savePowerUpQuantities(_powerUpQuantities);
@@ -187,7 +203,13 @@ class ShopProvider extends ChangeNotifier {
   }
 
   void equipItem(String itemId) {
-    _equippedItem = itemId;
+    _equippedSkin = itemId;
+    _saveShopData();
+    notifyListeners();
+  }
+  
+  void equipSkin(String skinId) {
+    _equippedSkin = skinId;
     _saveShopData();
     notifyListeners();
   }
@@ -200,6 +222,13 @@ class ShopProvider extends ChangeNotifier {
 
   List<ShopItem> getCustomizationItems() {
     return _items.where((item) => item.type == ShopItemType.customization).toList();
+  }
+  
+  List<ShopItem> getSkinItems() {
+    return _items.where((item) => 
+      item.type == ShopItemType.customization && 
+      item.id.startsWith('skin_')
+    ).toList();
   }
 
   List<ShopItem> getPowerUpItems() {
@@ -221,52 +250,52 @@ class ShopProvider extends ChangeNotifier {
     return false;
   }
 
+  // Get the image path for currently equipped skin, or default mole
+  String getMoleImagePath() {
+    if (_equippedSkin == null || _equippedSkin!.isEmpty) {
+      return 'assets/images/33121063782.png'; // Default mole
+    }
+    
+    final skin = _items.firstWhere(
+      (item) => item.id == _equippedSkin,
+      orElse: () => _items.first,
+    );
+    
+    return skin.imagePath ?? 'assets/images/33121063782.png';
+  }
+
   // ─── Daily Rewards ───────────────────────────────────────────────────────────
 
-  /// Returns true if 24 hours have passed since last claim (or never claimed)
   bool canClaimDailyReward() {
     if (_lastClaimDate == null) return true;
     final diff = DateTime.now().difference(_lastClaimDate!);
     return diff.inHours >= 24;
   }
 
-  /// The next day the player should claim (1-based). 
-  /// After day 7 it wraps back to 1.
   int get nextDayToClaim {
-    // _currentStreak is how many days have been claimed so far.
-    // So the NEXT day is _currentStreak + 1, wrapped to 1-7.
     int next = (_currentStreak % 7) + 1;
     return next;
   }
 
-  /// Claim today's reward. `day` must equal nextDayToClaim.
   Future<bool> claimDailyReward(int day) async {
-    // Guard: must be the correct next day and 24h must have passed
     if (!canClaimDailyReward()) return false;
     if (day != nextDayToClaim) return false;
 
-    final reward = _dailyRewards[day - 1]; // list is 0-indexed
+    final reward = _dailyRewards[day - 1];
     if (reward.isClaimed) return false;
 
-    // Give coins
     addCoins(reward.coins);
 
-    // Mark this day as claimed in memory + storage
     reward.isClaimed = true;
     await _storage.saveDailyRewardClaimed(day, true);
 
-    // Advance streak counter
     _currentStreak++;
     await _storage.saveDailyStreak(_currentStreak);
 
-    // Record when we claimed
     _lastClaimDate = DateTime.now();
     await _storage.saveLastClaimDate(_lastClaimDate!.toIso8601String());
 
-    // After day 7 completed, reset so the whole cycle can start again
     if (_currentStreak % 7 == 0) {
-      // Keep _currentStreak as-is (it's a multiple of 7 now) so nextDayToClaim
-      // wraps back to day 1, but clear all isClaimed flags for the new cycle.
       for (var r in _dailyRewards) {
         r.isClaimed = false;
         await _storage.saveDailyRewardClaimed(r.day, false);
