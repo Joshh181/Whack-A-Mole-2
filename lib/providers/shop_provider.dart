@@ -9,9 +9,10 @@ class ShopProvider extends ChangeNotifier {
   List<ShopItem> _items = [];
   List<DailyReward> _dailyRewards = [];
   int _coins = 150;
-  String? _equippedSkin; // Changed from _equippedItem to _equippedSkin
+  String? _equippedSkin;
   int _currentStreak = 0;
   DateTime? _lastClaimDate;
+  bool _isInitialized = false; // NEW: Track if data is loaded
   
   Map<String, int> _powerUpQuantities = {
     'extra_time': 0,
@@ -25,12 +26,52 @@ class ShopProvider extends ChangeNotifier {
   List<DailyReward> get dailyRewards => _dailyRewards;
   int get coins => _coins;
   int get currentStreak => _currentStreak;
-  String? get equippedItem => _equippedSkin; // For backward compatibility
+  String? get equippedItem => _equippedSkin;
   String? get equippedSkin => _equippedSkin;
+  bool get isInitialized => _isInitialized; // NEW: Check if loaded
 
   ShopProvider() {
     _initializeShop();
     _initializeDailyRewards();
+  }
+
+  // NEW: Call this after user logs in to load their data
+  Future<void> loadUserData() async {
+    debugPrint('🔄 Loading user data for: ${_storage.getUserId()}');
+    await _loadShopData();
+    await _loadDailyRewardsData();
+    _isInitialized = true;
+    debugPrint('✅ User data loaded successfully');
+  }
+
+  // NEW: Call this when user logs out to reset data
+  Future<void> resetData() async {
+    debugPrint('🔄 Resetting shop data...');
+    _coins = 150;
+    _equippedSkin = null;
+    _currentStreak = 0;
+    _lastClaimDate = null;
+    _isInitialized = false;
+    
+    // Reset all items to locked
+    for (var item in _items) {
+      item.isUnlocked = false;
+    }
+    
+    // Reset power-ups
+    _powerUpQuantities = {
+      'extra_time': 0,
+      'double_points': 0,
+      'slow_mole': 0,
+    };
+    
+    // Reset daily rewards
+    for (var reward in _dailyRewards) {
+      reward.isClaimed = false;
+    }
+    
+    notifyListeners();
+    debugPrint('✅ Shop data reset');
   }
 
   void _initializeShop() {
@@ -99,8 +140,6 @@ class ShopProvider extends ChangeNotifier {
         description: 'Slower moles for 10s',
       ),
     ];
-    
-    _loadShopData();
   }
 
   void _initializeDailyRewards() {
@@ -113,58 +152,69 @@ class ShopProvider extends ChangeNotifier {
       DailyReward(day: 6, coins: 250, iconEmoji: '🪙'),
       DailyReward(day: 7, coins: 500, iconEmoji: '🪙'),
     ];
-    _loadDailyRewardsData();
   }
 
   Future<void> _loadShopData() async {
-    _coins = await _storage.getCoins();
-    
-    List<String> unlockedIds = await _storage.getUnlockedItems();
-    for (var item in _items) {
-      if (unlockedIds.contains(item.id)) {
-        item.isUnlocked = true;
+    try {
+      _coins = await _storage.getCoins();
+      debugPrint('💰 Loaded coins: $_coins');
+      
+      List<String> unlockedIds = await _storage.getUnlockedItems();
+      debugPrint('🔓 Loaded unlocked items: $unlockedIds');
+      
+      for (var item in _items) {
+        item.isUnlocked = unlockedIds.contains(item.id);
       }
+      
+      _equippedSkin = await _storage.getEquippedItem();
+      debugPrint('👕 Loaded equipped skin: $_equippedSkin');
+      
+      _powerUpQuantities = await _storage.getPowerUpQuantities();
+      debugPrint('⚡ Loaded power-ups: $_powerUpQuantities');
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading shop data: $e');
     }
-    
-    _equippedSkin = await _storage.getEquippedItem();
-    _powerUpQuantities = await _storage.getPowerUpQuantities();
-    
-    notifyListeners();
   }
 
   Future<void> _loadDailyRewardsData() async {
-    _currentStreak = await _storage.getDailyStreak();
-    
-    String? lastClaimString = await _storage.getLastClaimDate();
-    if (lastClaimString != null && lastClaimString.isNotEmpty) {
-      try {
-        _lastClaimDate = DateTime.parse(lastClaimString);
-        
-        final now = DateTime.now();
-        final difference = now.difference(_lastClaimDate!);
-        
-        if (difference.inHours > 48) {
+    try {
+      _currentStreak = await _storage.getDailyStreak();
+      
+      String? lastClaimString = await _storage.getLastClaimDate();
+      if (lastClaimString != null && lastClaimString.isNotEmpty) {
+        try {
+          _lastClaimDate = DateTime.parse(lastClaimString);
+          
+          final now = DateTime.now();
+          final difference = now.difference(_lastClaimDate!);
+          
+          if (difference.inHours > 48) {
+            _currentStreak = 0;
+            _lastClaimDate = null;
+            await _storage.saveDailyStreak(0);
+            await _storage.saveLastClaimDate('');
+            
+            for (var r in _dailyRewards) {
+              r.isClaimed = false;
+              await _storage.saveDailyRewardClaimed(r.day, false);
+            }
+          }
+        } catch (e) {
           _currentStreak = 0;
           _lastClaimDate = null;
-          await _storage.saveDailyStreak(0);
-          await _storage.saveLastClaimDate('');
-          
-          for (var r in _dailyRewards) {
-            r.isClaimed = false;
-            await _storage.saveDailyRewardClaimed(r.day, false);
-          }
         }
-      } catch (e) {
-        _currentStreak = 0;
-        _lastClaimDate = null;
       }
+      
+      for (var reward in _dailyRewards) {
+        reward.isClaimed = await _storage.getDailyRewardClaimed(reward.day);
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error loading daily rewards: $e');
     }
-    
-    for (var reward in _dailyRewards) {
-      reward.isClaimed = await _storage.getDailyRewardClaimed(reward.day);
-    }
-    
-    notifyListeners();
   }
 
   Future<void> _saveShopData() async {
@@ -250,10 +300,9 @@ class ShopProvider extends ChangeNotifier {
     return false;
   }
 
-  // Get the image path for currently equipped skin, or default mole
   String getMoleImagePath() {
     if (_equippedSkin == null || _equippedSkin!.isEmpty) {
-      return 'assets/images/33121063782.png'; // Default mole
+      return 'assets/images/33121063782.png';
     }
     
     final skin = _items.firstWhere(

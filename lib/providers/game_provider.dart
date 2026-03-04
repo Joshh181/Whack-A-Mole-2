@@ -63,20 +63,21 @@ class GameProvider extends ChangeNotifier {
   int _highScore = 0;
   Timer? _gameTimer;
   Timer? _moleTimer;
-  int _currentMoleId = 0; // Add this to track unique mole spawns
-  int _totalMolesWhacked = 0; // Track total moles whacked
-  int _gamesPlayed = 0; // Track total games played
-  int _currentCombo = 0; // Track current combo
-  int _maxCombo = 0; // Track max combo in current game
+  int _currentMoleId = 0;
+  int _totalMolesWhacked = 0;
+  int _gamesPlayed = 0;
+  int _currentCombo = 0;
+  int _maxCombo = 0;
+
+  // ✅ Stores the final score at the moment the game ends — safe to read anytime
+  int _finalScore = 0;
+  int get finalScore => _finalScore;
 
   GameState get gameState => _gameState;
   int get highScore => _highScore;
   Level? get currentLevel => _currentLevel;
 
-  // backing list for achievements (populate as needed)
   final List<Achievement> _achievements = [];
-
-  // public getter used by AchievementsScreen
   List<Achievement> get achievements => _achievements;
 
   GameProvider() {
@@ -95,7 +96,7 @@ class GameProvider extends ChangeNotifier {
         iconEmoji: '',
       ),
     );
-    
+
     if (achievement.id.isNotEmpty) {
       achievement.currentProgress = progress;
       notifyListeners();
@@ -103,7 +104,6 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _checkScoreAchievements(int score) {
-    // Check score-based achievements
     if (score >= 10) {
       _updateAchievement('first_whack', 1);
     }
@@ -197,6 +197,7 @@ class GameProvider extends ChangeNotifier {
 
   void startGame() {
     _gameState.reset();
+    _finalScore = 0; // ✅ Reset final score
     _gameState.isPlaying = true;
     _startGameTimers();
     notifyListeners();
@@ -205,11 +206,12 @@ class GameProvider extends ChangeNotifier {
   void startGameWithLevel(Level level) {
     _currentLevel = level;
     _gameState.reset();
+    _finalScore = 0; // ✅ Reset final score
     _gameState.timeRemaining = 50;
     _gameState.isPlaying = true;
-    _currentMoleId = 0; // Reset mole ID counter
-    _currentCombo = 0; // Reset combo
-    _maxCombo = 0; // Reset max combo
+    _currentMoleId = 0;
+    _currentCombo = 0;
+    _maxCombo = 0;
     _gamesPlayed++;
     _updateAchievement('dedicated_player', _gamesPlayed);
     _startGameTimers(level);
@@ -217,30 +219,25 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _startGameTimers([Level? level]) {
-    // Cancel any existing timers first to prevent duplicates
     _gameTimer?.cancel();
     _moleTimer?.cancel();
-    
-    // Main game timer (countdown) - runs every second
+
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_gameState.timeRemaining > 0 && !_gameState.isPaused) {
-        _gameState.timeRemaining -= 1; // Reduce by 1 second only
+        _gameState.timeRemaining -= 1;
         notifyListeners();
       } else if (_gameState.timeRemaining <= 0) {
         endGame();
       }
     });
 
-    // Mole spawning timer - gives time gap between moles
     int moleDuration = level?.moleStayDuration ?? 1300;
-    // Add 300ms gap between mole disappearance and next spawn
     _moleTimer = Timer.periodic(Duration(milliseconds: moleDuration + 300), (timer) {
       if (!_gameState.isPaused && _gameState.isPlaying) {
         _spawnMole(level);
       }
     });
-    
-    // Spawn first mole immediately
+
     if (_gameState.isPlaying) {
       _spawnMole(level);
     }
@@ -249,19 +246,17 @@ class GameProvider extends ChangeNotifier {
   void _spawnMole(Level? level) {
     int totalHoles = level?.totalHoles ?? 12;
     _gameState.activeMoleIndex = _random.nextInt(totalHoles);
-    
-    // Increment mole ID for this spawn
+
     _currentMoleId++;
     final int thisMoleId = _currentMoleId;
-    
+
     notifyListeners();
 
     int moleDuration = level?.moleStayDuration ?? 1300;
     Future.delayed(Duration(milliseconds: moleDuration), () {
-      // Only hide the mole if it's still the same mole (hasn't been whacked)
       if (_gameState.activeMoleIndex != -1 && thisMoleId == _currentMoleId) {
         _gameState.activeMoleIndex = -1;
-        _currentCombo = 0; // Reset combo when mole is missed
+        _currentCombo = 0;
         notifyListeners();
       }
     });
@@ -272,19 +267,18 @@ class GameProvider extends ChangeNotifier {
       bool doublePoints = _gameState.isPowerUpActive(1);
       _gameState.addScore(10, doublePoints: doublePoints);
       _gameState.activeMoleIndex = -1;
-      _currentMoleId++; // Increment to invalidate the delayed hide
-      
-      // Track achievements
+      _currentMoleId++;
+
       _totalMolesWhacked++;
       _currentCombo++;
       if (_currentCombo > _maxCombo) {
         _maxCombo = _currentCombo;
       }
-      
+
       _updateAchievement('first_whack', _totalMolesWhacked);
       _checkScoreAchievements(_gameState.currentScore);
       _checkComboAchievements();
-      
+
       notifyListeners();
     }
   }
@@ -295,13 +289,12 @@ class GameProvider extends ChangeNotifier {
       _gameState.timeRemaining = 0;
     }
     _gameState.activeMoleIndex = -1;
-    _currentMoleId++; // Increment to invalidate the delayed hide
+    _currentMoleId++;
     notifyListeners();
   }
 
   void usePowerUp(int index) {
     if (index == 0) {
-      // Extra time
       _gameState.addTime(10);
       _gameState.activatePowerUp(0);
       Future.delayed(const Duration(seconds: 1), () {
@@ -309,14 +302,12 @@ class GameProvider extends ChangeNotifier {
         notifyListeners();
       });
     } else if (index == 1) {
-      // Double points
       _gameState.activatePowerUp(1);
       Future.delayed(const Duration(seconds: 10), () {
         _gameState.deactivatePowerUp(1);
         notifyListeners();
       });
     } else if (index == 2) {
-      // Slow mole
       _gameState.activatePowerUp(2);
 
       _moleTimer?.cancel();
@@ -355,25 +346,27 @@ class GameProvider extends ChangeNotifier {
   }
 
   void endGame() {
+    // ✅ Capture the score FIRST before any state changes
+    _finalScore = _gameState.currentScore;
+    debugPrint('=== endGame() called — finalScore: $_finalScore ===');
+
     _gameState.isPlaying = false;
     _gameTimer?.cancel();
     _moleTimer?.cancel();
 
-    if (_gameState.currentScore > _highScore) {
-      _highScore = _gameState.currentScore;
+    if (_finalScore > _highScore) {
+      _highScore = _finalScore;
       _storage.saveHighScore(_highScore);
     }
-    
-    // Check if player got 3 stars
+
     if (_currentLevel != null) {
-      int stars = _currentLevel!.calculateStars(_gameState.currentScore);
+      int stars = _currentLevel!.calculateStars(_finalScore);
       if (stars >= 3) {
         _updateAchievement('three_stars', 1);
       }
     }
-    
-    // Final achievement checks
-    _checkScoreAchievements(_gameState.currentScore);
+
+    _checkScoreAchievements(_finalScore);
     if (_maxCombo >= 15) {
       _updateAchievement('on_fire', _maxCombo);
     }

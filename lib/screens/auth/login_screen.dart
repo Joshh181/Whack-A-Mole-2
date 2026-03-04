@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/shop_provider.dart'; // ← Added
 import '../home_screen.dart';
 import 'signup_screen.dart';
 
@@ -36,13 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.text,
     );
 
-    setState(() => _isLoading = false);
-
     if (success && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      // ✅ CRITICAL FIX: Load user data after successful login
+      final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+      await shopProvider.loadUserData();
+      
+      debugPrint('✅ User data loaded, navigating to home...');
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } else if (mounted) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'Failed to sign in'),

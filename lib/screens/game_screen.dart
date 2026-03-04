@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/game_provider.dart';
 import '../providers/shop_provider.dart';
+import '../providers/leaderboard_provider.dart';
 import '../models/level.dart';
 import '../config/app_colors.dart';
 import '../widgets/pause_dialog.dart';
@@ -10,7 +12,7 @@ import '../providers/level_provider.dart';
 
 class GameScreen extends StatefulWidget {
   final Level level;
-  
+
   const GameScreen({super.key, required this.level});
 
   @override
@@ -22,6 +24,7 @@ class _GameScreenState extends State<GameScreen> {
   Set<int> bombMoles = {};
   Random random = Random();
   Set<String> _completedAchievements = {};
+  bool _scoreSubmitted = false;
 
   @override
   void initState() {
@@ -29,20 +32,43 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       gameProvider = Provider.of<GameProvider>(context, listen: false);
       gameProvider.startGameWithLevel(widget.level);
-      gameProvider.addListener(_checkForNewAchievements);
+      // ✅ ONE listener that handles both achievements AND score submission
+      gameProvider.addListener(_onGameProviderChanged);
     });
   }
 
   @override
   void dispose() {
-    gameProvider.removeListener(_checkForNewAchievements);
+    gameProvider.removeListener(_onGameProviderChanged);
     super.dispose();
+  }
+
+  // ✅ This fires every time GameProvider calls notifyListeners()
+  void _onGameProviderChanged() {
+    // Check achievements
+    _checkForNewAchievements();
+
+    // Submit score exactly once when game ends
+    if (!gameProvider.gameState.isPlaying && !_scoreSubmitted) {
+      final int score = gameProvider.finalScore;
+      debugPrint('🎯 Game ended — finalScore: $score');
+      if (score > 0) {
+        _scoreSubmitted = true;
+        // Submit to leaderboard
+        _submitScoreToLeaderboard(score);
+        // Complete level
+        final levelProvider =
+            Provider.of<LevelProvider>(context, listen: false);
+        levelProvider.completeLevel(widget.level.levelNumber, score);
+      }
+    }
   }
 
   void _checkForNewAchievements() {
     final achievements = gameProvider.achievements;
     for (var achievement in achievements) {
-      if (achievement.isCompleted && !_completedAchievements.contains(achievement.id)) {
+      if (achievement.isCompleted &&
+          !_completedAchievements.contains(achievement.id)) {
         _completedAchievements.add(achievement.id);
         _showAchievementPopup(achievement);
       }
@@ -52,7 +78,7 @@ class _GameScreenState extends State<GameScreen> {
   void _showAchievementPopup(achievement) {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
-    
+
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         top: 80,
@@ -138,9 +164,9 @@ class _GameScreenState extends State<GameScreen> {
         ),
       ),
     );
-    
+
     overlay.insert(overlayEntry);
-    
+
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (overlayEntry.mounted) {
         overlayEntry.remove();
@@ -148,79 +174,75 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
-  // Calculate mole size based on grid columns
+  Future<void> _submitScoreToLeaderboard(int score) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+
+      if (user == null) {
+        debugPrint('No logged-in user, skipping leaderboard submission');
+        return;
+      }
+
+      final username = user.userMetadata?['username'] as String? ??
+          user.userMetadata?['name'] as String? ??
+          user.email ??
+          'Anonymous';
+
+      debugPrint('Submitting score: $score for user: $username');
+
+      final leaderboardProvider =
+          Provider.of<LeaderboardProvider>(context, listen: false);
+
+      final success = await leaderboardProvider.submitScore(
+        userId: user.id,
+        username: username,
+        score: score,
+      );
+
+      debugPrint(success
+          ? '✅ Score submitted successfully!'
+          : '❌ Failed to submit score');
+    } catch (e) {
+      debugPrint('❌ Error submitting score: $e');
+    }
+  }
+
   double _getMoleSize() {
     int columns = widget.level.gridColumns;
-    
-    if (columns == 3) {
-      return 170.0; // Level 1-2: Large mole
-    } else if (columns == 4) {
-      return 130.0; // Level 3-4: Medium mole
-    } else {
-      return 100.0; // Level 5: Small mole
-    }
+    if (columns == 3) return 170.0;
+    if (columns == 4) return 130.0;
+    return 100.0;
   }
 
-  // Calculate TOP position - same for both mole and bomb
   double _getTopPosition(bool isActive) {
     int columns = widget.level.gridColumns;
-    
-    if (!isActive) {
-      return 500.0; // Hidden far below
-    }
-    
-    // Active position
-    if (columns == 3) {
-      return -30.0; // Level 1-2
-    } else if (columns == 4) {
-      return -15.0; // Level 3-4
-    } else {
-      return -10.0; // Level 5
-    }
+    if (!isActive) return 500.0;
+    if (columns == 3) return -30.0;
+    if (columns == 4) return -15.0;
+    return -10.0;
   }
 
-  // Calculate bomb size based on grid columns
   double _getBombSize() {
     int columns = widget.level.gridColumns;
-    
-    if (columns == 3) {
-      return 70.0;
-    } else if (columns == 4) {
-      return 55.0;
-    } else {
-      return 45.0;
-    }
+    if (columns == 3) return 70.0;
+    if (columns == 4) return 55.0;
+    return 45.0;
   }
 
-  // Calculate bomb top position
   double _getBombTopPosition(bool isActive) {
     int columns = widget.level.gridColumns;
-    
-    if (!isActive) {
-      return 500.0; // Hidden far below
-    }
-    
-    // Adjusted positions to center the bomb better
-    if (columns == 3) {
-      return -10.0;
-    } else if (columns == 4) {
-      return 0.0;
-    } else {
-      return 5.0;
-    }
+    if (!isActive) return 500.0;
+    if (columns == 3) return -10.0;
+    if (columns == 4) return 0.0;
+    return 5.0;
   }
 
-  // Calculate skin position offset based on grid columns
   double _getSkinPositionOffset() {
     int columns = widget.level.gridColumns;
-    
-    if (columns == 3) {
-      return 20.0; // Level 1-2: Move down 20px
-    } else if (columns == 4) {
-      return 15.0; // Level 3-4: Move down 15px
-    } else {
-      return 12.0; // Level 5: Move down 12px
-    }
+    if (columns == 3) return 20.0;
+    if (columns == 4) return 15.0;
+    return 12.0;
   }
 
   @override
@@ -265,13 +287,11 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildGameScreen(GameProvider gp) {
     return Column(
       children: [
-        // Top bar
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Score
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -302,8 +322,6 @@ class _GameScreenState extends State<GameScreen> {
                   ],
                 ),
               ),
-              
-              // Coins
               Consumer<ShopProvider>(
                 builder: (context, shopProvider, child) {
                   return Container(
@@ -332,8 +350,6 @@ class _GameScreenState extends State<GameScreen> {
                   );
                 },
               ),
-              
-              // Pause button
               IconButton(
                 onPressed: () {
                   gp.pauseGame();
@@ -348,10 +364,7 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ),
         ),
-        
         const SizedBox(height: 10),
-        
-        // Game grid
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(left: 8, right: 8, top: 40),
@@ -367,21 +380,21 @@ class _GameScreenState extends State<GameScreen> {
               itemBuilder: (context, index) {
                 bool isMoleActive = gp.gameState.activeMoleIndex == index;
                 bool hasBomb = bombMoles.contains(index);
-                
-                if (isMoleActive && !bombMoles.contains(index) && widget.level.bombChance > 0) {
+
+                if (isMoleActive &&
+                    !bombMoles.contains(index) &&
+                    widget.level.bombChance > 0) {
                   if (random.nextInt(100) < widget.level.bombChance) {
                     bombMoles.add(index);
                     hasBomb = true;
                   }
                 }
-                
+
                 return _buildHole(index, isMoleActive, hasBomb, gp);
               },
             ),
           ),
         ),
-        
-        // Timer bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
@@ -411,32 +424,30 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ),
         ),
-        
-        // Power-ups
         _buildPowerUps(gp),
-        
         const SizedBox(height: 20),
       ],
     );
   }
 
-  Widget _buildHole(int index, bool isMoleActive, bool hasBomb, GameProvider gp) {
+  Widget _buildHole(
+      int index, bool isMoleActive, bool hasBomb, GameProvider gp) {
     final moleSize = _getMoleSize();
     final moleTopPosition = _getTopPosition(isMoleActive);
     final bombSize = _getBombSize();
     final bombTopPosition = _getBombTopPosition(isMoleActive);
     final skinPositionOffset = _getSkinPositionOffset();
-    
+
     return GestureDetector(
       onTap: () {
         if (isMoleActive) {
           if (hasBomb) {
             gp.hitBomb(widget.level.bombTimePenalty);
             bombMoles.remove(index);
-            
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('💣 BOMB! -${widget.level.bombTimePenalty} seconds!'),
+                content:
+                    Text('💣 BOMB! -${widget.level.bombTimePenalty} seconds!'),
                 duration: const Duration(milliseconds: 800),
                 backgroundColor: Colors.red,
               ),
@@ -450,12 +461,10 @@ class _GameScreenState extends State<GameScreen> {
         clipBehavior: Clip.hardEdge,
         alignment: Alignment.center,
         children: [
-          // Hole background
           Image.asset(
             'assets/images/HOLE.png',
             fit: BoxFit.contain,
           ),
-          // Mole OR Bomb
           if (hasBomb)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 400),
@@ -474,19 +483,14 @@ class _GameScreenState extends State<GameScreen> {
             Consumer<ShopProvider>(
               builder: (context, shopProvider, child) {
                 final moleImagePath = shopProvider.getMoleImagePath();
-                
-                // Check if it's a skin (not the original mole)
-                final isOriginalMole = moleImagePath.contains('33121063782.png');
-                
-                // Use smaller size for skins (60% of original size)
-                final adjustedSize = isOriginalMole ? moleSize : moleSize * 0.60;
-                
-                // Adjust position for skins - move them down to center better
-                // Position offset scales with level (larger offset for bigger moles)
-                final adjustedTopPosition = isOriginalMole 
-                    ? moleTopPosition 
+                final isOriginalMole =
+                    moleImagePath.contains('33121063782.png');
+                final adjustedSize =
+                    isOriginalMole ? moleSize : moleSize * 0.60;
+                final adjustedTopPosition = isOriginalMole
+                    ? moleTopPosition
                     : moleTopPosition + skinPositionOffset;
-                
+
                 return AnimatedPositioned(
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeOut,
@@ -512,7 +516,7 @@ class _GameScreenState extends State<GameScreen> {
       builder: (context, shopProvider, child) {
         final powerUps = shopProvider.getPowerUpItems();
         if (powerUps.isEmpty) return const SizedBox.shrink();
-        
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
@@ -566,7 +570,7 @@ class _GameScreenState extends State<GameScreen> {
     required VoidCallback onTap,
   }) {
     bool canUse = count > 0;
-    
+
     return Opacity(
       opacity: canUse ? 1.0 : 0.4,
       child: GestureDetector(
@@ -631,14 +635,11 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  // ✅ CLEAN — no addPostFrameCallback, no score logic here at all
   Widget _buildGameOverScreen(GameProvider gp) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final levelProvider = Provider.of<LevelProvider>(context, listen: false);
-      levelProvider.completeLevel(widget.level.levelNumber, gp.gameState.currentScore);
-    });
-    
-    int stars = widget.level.calculateStars(gp.gameState.currentScore);
-    
+    final int finalScore = gp.finalScore;
+    int stars = widget.level.calculateStars(finalScore);
+
     return Center(
       child: Container(
         margin: const EdgeInsets.all(32),
@@ -675,7 +676,6 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(3, (index) {
@@ -686,22 +686,22 @@ class _GameScreenState extends State<GameScreen> {
                 );
               }),
             ),
-            
             const SizedBox(height: 24),
+            // ✅ Show finalScore (safe), not gp.gameState.currentScore
             Text(
-              'Score: ${gp.gameState.currentScore}',
+              'Score: $finalScore',
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 32),
-            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
                   onPressed: () {
+                    _scoreSubmitted = false; // Reset so retry submits again
                     gp.restartGame();
                   },
                   style: ElevatedButton.styleFrom(

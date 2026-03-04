@@ -41,14 +41,32 @@ class WhackAMoleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Whack-a-Mole',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-      ),
-      home: const SplashScreen(),
+    // ✅ CRITICAL FIX: Load user data when authenticated
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        // Load shop data when user logs in
+        if (authProvider.isAuthenticated) {
+          final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+          
+          // Only load if not already loaded for this user
+          if (!shopProvider.isInitialized) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              debugPrint('🔄 Loading user data...');
+              shopProvider.loadUserData();
+            });
+          }
+        }
+        
+        return MaterialApp(
+          title: 'Whack-a-Mole',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+            useMaterial3: true,
+          ),
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

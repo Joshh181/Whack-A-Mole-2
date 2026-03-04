@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final StorageService _storage = StorageService();
   
   User? _currentUser;
   bool _isLoading = true;
@@ -22,13 +24,21 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     
     try {
-      // Check if user is already logged in
       final session = _supabase.auth.currentSession;
       _currentUser = session?.user;
       
-      // Listen to auth state changes
+      if (_currentUser != null) {
+        _storage.setUserId(_currentUser!.id);
+        debugPrint('✅ User already logged in: ${_currentUser!.id}');
+      }
+      
       _supabase.auth.onAuthStateChange.listen((data) {
         _currentUser = data.session?.user;
+        
+        if (_currentUser != null) {
+          _storage.setUserId(_currentUser!.id);
+        }
+        
         notifyListeners();
       });
     } catch (e) {
@@ -51,6 +61,13 @@ class AuthProvider with ChangeNotifier {
       );
 
       _currentUser = response.user;
+      
+      if (_currentUser != null) {
+        _storage.setUserId(_currentUser!.id);
+        debugPrint('✅ User logged in: ${_currentUser!.id}');
+        debugPrint('📧 Email: ${_currentUser!.email}');
+      }
+      
       _isLoading = false;
       notifyListeners();
       return true;
@@ -85,8 +102,12 @@ class AuthProvider with ChangeNotifier {
 
       _currentUser = response.user;
       
-      // Create user profile in database
       if (_currentUser != null) {
+        _storage.setUserId(_currentUser!.id);
+        debugPrint('✅ New user created: ${_currentUser!.id}');
+        debugPrint('📧 Email: ${_currentUser!.email}');
+        debugPrint('👤 Username: $username');
+        
         await _createUserProfile(username);
       }
       
@@ -121,11 +142,21 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     try {
+      debugPrint('🔄 Logging out user: ${_currentUser?.id}');
+      
+      // Clear user data from storage
+      await _storage.clearUserData();
+      debugPrint('✅ User data cleared from storage');
+      
+      // Sign out from Supabase
       await _supabase.auth.signOut();
       _currentUser = null;
+      
+      debugPrint('✅ User signed out successfully');
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Error signing out';
+      debugPrint('❌ Sign out error: $e');
       notifyListeners();
     }
   }

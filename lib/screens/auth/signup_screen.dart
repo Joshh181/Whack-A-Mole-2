@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/shop_provider.dart'; // ← Added
 import '../home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -41,13 +42,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
       password: _passwordController.text,
     );
 
-    setState(() => _isLoading = false);
-
     if (success && mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      // ✅ CRITICAL FIX: Load fresh user data after signup
+      final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+      
+      // Reset to ensure fresh start
+      await shopProvider.resetData();
+      
+      // Load the new user's data (should be fresh 150 coins)
+      await shopProvider.loadUserData();
+      
+      debugPrint('✅ New user data loaded, navigating to home...');
+      
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } else if (mounted) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'Failed to sign up'),
