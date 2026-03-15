@@ -15,7 +15,8 @@ class LevelProvider extends ChangeNotifier {
   }
 
   void _initializeLevels() {
-    _levels = List.generate(5, (index) => Level.createLevel(index + 1));
+    // ✅ Generate 10 levels instead of 5
+    _levels = List.generate(10, (index) => Level.createLevel(index + 1));
     loadLevels();
   }
 
@@ -26,8 +27,20 @@ class LevelProvider extends ChangeNotifier {
     if (levelsJson != null) {
       try {
         final List<dynamic> decoded = json.decode(levelsJson);
-        _levels = decoded.map((item) => Level.fromJson(item)).toList();
+        final savedLevels = decoded.map((item) => Level.fromJson(item)).toList();
+        
+        // ✅ Preserve player progress while using new grid configurations
+        for (int i = 0; i < _levels.length && i < savedLevels.length; i++) {
+          _levels[i].highScore = savedLevels[i].highScore;
+          _levels[i].stars = savedLevels[i].stars;
+          _levels[i].isUnlocked = savedLevels[i].isUnlocked;
+        }
+        
+        // ✅ Save the updated configuration
+        await saveLevels();
+        
       } catch (e) {
+        debugPrint('Error loading levels: $e');
         _initializeLevels();
       }
     }

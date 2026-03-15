@@ -32,7 +32,6 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       gameProvider = Provider.of<GameProvider>(context, listen: false);
       gameProvider.startGameWithLevel(widget.level);
-      // ✅ ONE listener that handles both achievements AND score submission
       gameProvider.addListener(_onGameProviderChanged);
     });
   }
@@ -43,20 +42,15 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
-  // ✅ This fires every time GameProvider calls notifyListeners()
   void _onGameProviderChanged() {
-    // Check achievements
     _checkForNewAchievements();
 
-    // Submit score exactly once when game ends
     if (!gameProvider.gameState.isPlaying && !_scoreSubmitted) {
       final int score = gameProvider.finalScore;
       debugPrint('🎯 Game ended — finalScore: $score');
       if (score > 0) {
         _scoreSubmitted = true;
-        // Submit to leaderboard
         _submitScoreToLeaderboard(score);
-        // Complete level
         final levelProvider =
             Provider.of<LevelProvider>(context, listen: false);
         levelProvider.completeLevel(widget.level.levelNumber, score);
@@ -208,19 +202,20 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  // ✅ Dynamic sizing based on grid size
   double _getMoleSize() {
     int columns = widget.level.gridColumns;
-    if (columns == 3) return 170.0;
-    if (columns == 4) return 130.0;
-    return 100.0;
+    if (columns == 3) return 170.0;  // 3×3 grid
+    if (columns == 4) return 130.0;  // 4×4 grid
+    return 100.0;  // 5×5 grid
   }
 
   double _getTopPosition(bool isActive) {
-    int columns = widget.level.gridColumns;
     if (!isActive) return 500.0;
-    if (columns == 3) return -30.0;
-    if (columns == 4) return -15.0;
-    return -10.0;
+    int columns = widget.level.gridColumns;
+    if (columns == 3) return -25.0;
+    if (columns == 4) return -25.0;  // ✅ Raised to match 3×3 centering
+    return -15.0;  // ✅ Raised for 5×5 grid
   }
 
   double _getBombSize() {
@@ -231,11 +226,11 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   double _getBombTopPosition(bool isActive) {
-    int columns = widget.level.gridColumns;
     if (!isActive) return 500.0;
-    if (columns == 3) return -10.0;
-    if (columns == 4) return 0.0;
-    return 5.0;
+    int columns = widget.level.gridColumns;
+    if (columns == 3) return -1.0;
+    if (columns == 4) return -1.0;  // ✅ Raised to match 3×3
+    return -5.0;  // ✅ Raised for 5×5 grid
   }
 
   double _getSkinPositionOffset() {
@@ -635,7 +630,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // ✅ CLEAN — no addPostFrameCallback, no score logic here at all
   Widget _buildGameOverScreen(GameProvider gp) {
     final int finalScore = gp.finalScore;
     int stars = widget.level.calculateStars(finalScore);
@@ -687,7 +681,6 @@ class _GameScreenState extends State<GameScreen> {
               }),
             ),
             const SizedBox(height: 24),
-            // ✅ Show finalScore (safe), not gp.gameState.currentScore
             Text(
               'Score: $finalScore',
               style: const TextStyle(
@@ -701,7 +694,7 @@ class _GameScreenState extends State<GameScreen> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    _scoreSubmitted = false; // Reset so retry submits again
+                    _scoreSubmitted = false;
                     gp.restartGame();
                   },
                   style: ElevatedButton.styleFrom(
