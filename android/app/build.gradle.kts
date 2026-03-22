@@ -5,9 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.whack_a_mole"
-    compileSdk = 36  // Changed from 34 to 36
-    
+    namespace = "whack.a.mole"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -18,11 +19,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.whack_a_mole"
+        applicationId = "whack.a.mole"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36  // Changed from 34 to 36
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {

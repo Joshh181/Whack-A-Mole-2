@@ -1,4 +1,4 @@
-name: whack_a_mole
+name: whackamole
 description: "A fun whack-a-mole game with authentication and leaderboard."
 publish_to: 'none'
 
@@ -44,9 +44,3 @@ flutter:
   assets:
     - assets/images/
     - assets/sounds/
-    # Uncomment these if you add specific files later:
-    # - assets/images/mole.png
-    # - assets/images/hole.png
-    # - assets/sounds/whack.mp3
-    # - assets/sounds/button_click.mp3
-    # - assets/sounds/background.mp3

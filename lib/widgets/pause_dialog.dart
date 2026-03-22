@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../config/app_colors.dart';
+import '../services/audio_service.dart';
 
 class PauseDialog extends StatelessWidget {
   const PauseDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final audioService = AudioService();
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       child: Container(
@@ -29,8 +31,10 @@ class PauseDialog extends StatelessWidget {
               label: 'RESUME',
               color: AppColors.resumeYellow,
               onPressed: () {
+                audioService.playButtonClick();
                 Navigator.pop(context);
                 Provider.of<GameProvider>(context, listen: false).resumeGame();
+                audioService.resumeBackgroundMusic();
               },
             ),
             const SizedBox(height: 12),
@@ -38,8 +42,10 @@ class PauseDialog extends StatelessWidget {
               label: 'RESTART',
               color: AppColors.restartGreen,
               onPressed: () {
+                audioService.playButtonClick();
                 Navigator.pop(context);
                 Provider.of<GameProvider>(context, listen: false).restartGame();
+                audioService.playBackgroundMusic();
               },
             ),
             const SizedBox(height: 12),
@@ -47,6 +53,8 @@ class PauseDialog extends StatelessWidget {
               label: 'HOME',
               color: AppColors.homeBlue,
               onPressed: () {
+                audioService.playButtonClick();
+                audioService.stopBackgroundMusic();
                 Navigator.pop(context);
                 Navigator.pop(context);
               },

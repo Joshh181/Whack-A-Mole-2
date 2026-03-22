@@ -9,6 +9,7 @@ import '../config/app_colors.dart';
 import '../widgets/pause_dialog.dart';
 import 'dart:math';
 import '../providers/level_provider.dart';
+import '../services/audio_service.dart';
 
 class GameScreen extends StatefulWidget {
   final Level level;
@@ -21,6 +22,7 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   late GameProvider gameProvider;
+  final AudioService _audioService = AudioService();
   Set<int> bombMoles = {};
   Random random = Random();
   Set<String> _completedAchievements = {};
@@ -33,12 +35,15 @@ class _GameScreenState extends State<GameScreen> {
       gameProvider = Provider.of<GameProvider>(context, listen: false);
       gameProvider.startGameWithLevel(widget.level);
       gameProvider.addListener(_onGameProviderChanged);
+      // 🔊 Start background music when game begins
+      _audioService.playBackgroundMusic();
     });
   }
 
   @override
   void dispose() {
     gameProvider.removeListener(_onGameProviderChanged);
+    _audioService.stopBackgroundMusic();
     super.dispose();
   }
 
@@ -48,6 +53,9 @@ class _GameScreenState extends State<GameScreen> {
     if (!gameProvider.gameState.isPlaying && !_scoreSubmitted) {
       final int score = gameProvider.finalScore;
       debugPrint('🎯 Game ended — finalScore: $score');
+      // 🔊 Play game over sound and stop music
+      _audioService.stopBackgroundMusic();
+      _audioService.playGameOverSound();
       if (score > 0) {
         _scoreSubmitted = true;
         _submitScoreToLeaderboard(score);
@@ -64,6 +72,7 @@ class _GameScreenState extends State<GameScreen> {
       if (achievement.isCompleted &&
           !_completedAchievements.contains(achievement.id)) {
         _completedAchievements.add(achievement.id);
+        _audioService.playAchievementSound();
         _showAchievementPopup(achievement);
       }
     }
@@ -247,6 +256,7 @@ class _GameScreenState extends State<GameScreen> {
         final gp = Provider.of<GameProvider>(context, listen: false);
         if (gp.gameState.isPlaying) {
           gp.pauseGame();
+          _audioService.pauseBackgroundMusic();
           _showPauseDialog();
           return false;
         }
@@ -348,6 +358,7 @@ class _GameScreenState extends State<GameScreen> {
               IconButton(
                 onPressed: () {
                   gp.pauseGame();
+                  _audioService.pauseBackgroundMusic();
                   _showPauseDialog();
                 },
                 icon: const Icon(
@@ -437,6 +448,7 @@ class _GameScreenState extends State<GameScreen> {
       onTap: () {
         if (isMoleActive) {
           if (hasBomb) {
+            _audioService.playBombSound();
             gp.hitBomb(widget.level.bombTimePenalty);
             bombMoles.remove(index);
             ScaffoldMessenger.of(context).showSnackBar(
@@ -448,6 +460,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
             );
           } else {
+            _audioService.playWhackSound();
             gp.whackMole(index);
           }
         }
@@ -524,6 +537,7 @@ class _GameScreenState extends State<GameScreen> {
                 isActive: gp.gameState.isPowerUpActive(0),
                 onTap: () {
                   if (shopProvider.usePowerUp('extra_time')) {
+                    _audioService.playPowerUpSound();
                     gp.usePowerUp(0);
                   }
                 },
@@ -535,6 +549,7 @@ class _GameScreenState extends State<GameScreen> {
                 isActive: gp.gameState.isPowerUpActive(1),
                 onTap: () {
                   if (shopProvider.usePowerUp('double_points')) {
+                    _audioService.playPowerUpSound();
                     gp.usePowerUp(1);
                   }
                 },
@@ -546,6 +561,7 @@ class _GameScreenState extends State<GameScreen> {
                 isActive: gp.gameState.isPowerUpActive(2),
                 onTap: () {
                   if (shopProvider.usePowerUp('slow_mole')) {
+                    _audioService.playPowerUpSound();
                     gp.usePowerUp(2);
                   }
                 },
@@ -634,6 +650,23 @@ class _GameScreenState extends State<GameScreen> {
     final int finalScore = gp.finalScore;
     int stars = widget.level.calculateStars(finalScore);
 
+    // Dynamic title based on performance
+    final String titleText;
+    final Color titleColor;
+    if (stars == 0) {
+      titleText = 'GAME OVER';
+      titleColor = Colors.red;
+    } else if (stars == 1) {
+      titleText = 'NICE TRY!';
+      titleColor = Colors.orange;
+    } else if (stars == 2) {
+      titleText = 'GREAT JOB!';
+      titleColor = Colors.blue;
+    } else {
+      titleText = 'PERFECT!';
+      titleColor = Colors.green;
+    }
+
     return Center(
       child: Container(
         margin: const EdgeInsets.all(32),
@@ -661,12 +694,12 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'COMPLETE!',
+            Text(
+              titleText,
               style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: Colors.green,
+                color: titleColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -695,6 +728,8 @@ class _GameScreenState extends State<GameScreen> {
                 ElevatedButton(
                   onPressed: () {
                     _scoreSubmitted = false;
+                    _audioService.playButtonClick();
+                    _audioService.playBackgroundMusic();
                     gp.restartGame();
                   },
                   style: ElevatedButton.styleFrom(
@@ -714,6 +749,7 @@ class _GameScreenState extends State<GameScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
+                    _audioService.playButtonClick();
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(

@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import '../config/app_constants.dart';
 import '../services/storage_service.dart';
+import '../services/audio_service.dart';
 
 class SettingsProvider with ChangeNotifier {
   final StorageService _storage = StorageService();
+  final AudioService _audioService = AudioService();
   
   bool _soundEffects = true;
   bool _backgroundMusic = true;
@@ -34,6 +36,10 @@ class SettingsProvider with ChangeNotifier {
       final lang = await _storage.getString(AppConstants.keyLanguage);
       _language = lang;
       
+      // Sync AudioService with loaded settings
+      _audioService.setSoundEffectsEnabled(_soundEffects);
+      _audioService.setBackgroundMusicEnabled(_backgroundMusic);
+
       notifyListeners();
     } catch (e) {
       // If there's an error loading settings, use defaults
@@ -43,12 +49,14 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> toggleSoundEffects() async {
     _soundEffects = !_soundEffects;
+    _audioService.setSoundEffectsEnabled(_soundEffects);
     await _storage.saveBool(AppConstants.keySoundEffects, _soundEffects);
     notifyListeners();
   }
 
   Future<void> toggleBackgroundMusic() async {
     _backgroundMusic = !_backgroundMusic;
+    _audioService.setBackgroundMusicEnabled(_backgroundMusic);
     await _storage.saveBool(AppConstants.keyBackgroundMusic, _backgroundMusic);
     notifyListeners();
   }

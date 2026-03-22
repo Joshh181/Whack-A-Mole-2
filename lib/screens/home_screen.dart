@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shop_provider.dart';
 import '../config/app_colors.dart';
+import '../services/audio_service.dart';
 import 'achievements_screen.dart';
 import 'settings_screen.dart';
 import 'daily_rewards_screen.dart';
@@ -15,6 +16,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final audioService = AudioService();
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -39,6 +41,7 @@ class HomeScreen extends StatelessWidget {
                     // Customize button
                     GestureDetector(
                       onTap: () {
+                        audioService.playButtonClick();
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -148,6 +151,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.play_arrow,
                 color: const Color(0xFF00E676),
                 onPressed: () {
+                  audioService.playButtonClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const LevelSelectionScreen()),
@@ -162,6 +166,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.emoji_events,
                 color: const Color(0xFFFFB300),
                 onPressed: () {
+                  audioService.playButtonClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -178,6 +183,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.emoji_events_outlined,
                 color: const Color(0xFFCDDC39),
                 onPressed: () {
+                  audioService.playButtonClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -194,6 +200,7 @@ class HomeScreen extends StatelessWidget {
                 icon: Icons.settings,
                 color: const Color(0xFF9E9E9E),
                 onPressed: () {
+                  audioService.playButtonClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -212,6 +219,7 @@ class HomeScreen extends StatelessWidget {
                     label: 'DAILY',
                     color: const Color(0xFF2196F3),
                     onPressed: () {
+                      audioService.playButtonClick();
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -226,6 +234,7 @@ class HomeScreen extends StatelessWidget {
                     label: 'SHOP',
                     color: const Color(0xFFFF1744),
                     onPressed: () {
+                      audioService.playButtonClick();
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const ShopScreen()),
