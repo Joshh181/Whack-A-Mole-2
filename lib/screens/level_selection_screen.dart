@@ -88,7 +88,7 @@ class LevelSelectionScreen extends StatelessWidget {
                           mainAxisSpacing: 16,
                           childAspectRatio: 0.85,
                         ),
-                        itemCount: levelProvider.levels.length, // Now 10 levels
+                        itemCount: levelProvider.levels.length,
                         itemBuilder: (context, index) {
                           final level = levelProvider.levels[index];
                           return _LevelCard(level: level);
@@ -165,22 +165,17 @@ class _LevelCard extends StatelessWidget {
   const _LevelCard({required this.level});
 
   Color _getLevelColor() {
-    // Levels 1-5: Green shades
-    if (level.levelNumber <= 5) {
-      return Colors.green.shade400;
-    }
-    // Levels 6-8: Orange shades
-    if (level.levelNumber <= 8) {
-      return Colors.orange.shade400;
-    }
-    // Levels 9-10: Red shades
-    return Colors.red.shade400;
+    // Vibrant colors for the card background
+    if (level.levelNumber <= 5) return const Color(0xFF66BB6A); // Green
+    if (level.levelNumber <= 8) return const Color(0xFFFFA726); // Orange
+    return const Color(0xFFEF5350); // Red
   }
 
-  String _getLevelBadge() {
-    if (level.levelNumber <= 5) return '🟢';  // Beginner
-    if (level.levelNumber <= 8) return '🟠';  // Intermediate
-    return '🔴';  // Expert
+  Color _getDarkColor() {
+    // Darker shade for the 3D depth and text
+    if (level.levelNumber <= 5) return const Color(0xFF2E7D32);
+    if (level.levelNumber <= 8) return const Color(0xFFE65100);
+    return const Color(0xFFC62828);
   }
 
   String _getDifficultyLabel() {
@@ -192,7 +187,8 @@ class _LevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLocked = !level.isUnlocked;
-    final cardColor = _getLevelColor();
+    final cardColor = isLocked ? Colors.grey.shade400 : _getLevelColor();
+    final darkColor = isLocked ? Colors.grey.shade600 : _getDarkColor();
 
     return GestureDetector(
       onTap: () {
@@ -224,112 +220,184 @@ class _LevelCard extends StatelessWidget {
           );
         }
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isLocked
-                ? [Colors.grey.shade400, Colors.grey.shade500]
-                : [cardColor, cardColor.withOpacity(0.8)],
-          ),
-          borderRadius: BorderRadius.circular(20),
+          color: cardColor,
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
+            // 3D bottom depth
             BoxShadow(
-              color: isLocked 
-                  ? Colors.grey.withOpacity(0.3)
-                  : cardColor.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+              color: darkColor.withOpacity(0.8),
+              offset: const Offset(0, 8),
+              blurRadius: 0,
+            ),
+            // Soft drop shadow
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              offset: const Offset(0, 12),
+              blurRadius: 15,
             ),
           ],
           border: Border.all(
-            color: isLocked ? Colors.grey.shade300 : Colors.white,
+            color: isLocked ? Colors.grey.shade300 : Colors.white.withOpacity(0.9),
             width: 3,
           ),
         ),
         child: Stack(
           children: [
-            // Level content
+            // Glassy top highlight
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 40,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(21)),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(0.4),
+                      Colors.white.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Level number + badge
+                  // Top row: Avatar (Level Number) and High Score
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Circular Level Number Badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              offset: const Offset(0, 4),
+                              blurRadius: 6,
+                            )
+                          ],
                         ),
-                        child: Text(
-                          '${level.levelNumber}',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: isLocked ? Colors.grey : cardColor,
+                        child: Center(
+                          child: Text(
+                            '${level.levelNumber}',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: isLocked ? Colors.grey : darkColor,
+                            ),
                           ),
                         ),
                       ),
-                      if (!isLocked)
-                        Text(
-                          _getLevelBadge(),
-                          style: const TextStyle(fontSize: 28),
+                      
+                      // Trophy High Score Pill
+                      if (!isLocked && level.highScore > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFB300), // Amber 600
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.amber.shade200, width: 1.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xFFE65100), // Orange 900
+                                offset: Offset(0, 3),
+                              )
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 2),
+                                child: Icon(Icons.emoji_events_rounded, size: 14, color: Colors.white),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${level.highScore}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(color: Colors.black38, offset: Offset(0, 1), blurRadius: 2)
+                                  ]
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),
 
-                  // Grid info removed
-
-                  // Stars
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(3, (index) {
-                      return Icon(
-                        index < level.stars ? Icons.star : Icons.star_border,
-                        color: index < level.stars 
-                            ? Colors.amber 
-                            : (isLocked ? Colors.white54 : Colors.white70),
-                        size: 24,
-                      );
-                    }),
+                  // Middle Area: Stars or Lock Icon
+                  Expanded(
+                    child: Center(
+                      child: isLocked
+                        ? const Icon(
+                            Icons.lock_rounded, 
+                            size: 48, 
+                            color: Colors.white54,
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(3, (index) {
+                              final earned = index < level.stars;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 2),
+                                child: Icon(
+                                  earned ? Icons.star_rounded : Icons.star_border_rounded,
+                                  color: earned ? const Color(0xFFFFD54F) : Colors.white60,
+                                  size: 32,
+                                  shadows: earned ? const [
+                                    Shadow(color: Color(0xFFF57F17), offset: Offset(0, 3), blurRadius: 4)
+                                  ] : null,
+                                ),
+                              );
+                            }),
+                          ),
+                    ),
                   ),
 
-                  // Difficulty label
+                  // Bottom Area: Difficulty Tag
                   if (!isLocked)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.4)),
                       ),
                       child: Text(
                         _getDifficultyLabel(),
-                        style: TextStyle(
-                          fontSize: 11,
+                        style: const TextStyle(
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
-                          color: cardColor,
-                          letterSpacing: 1,
+                          color: Colors.white,
+                          letterSpacing: 1.5,
                         ),
                       ),
                     ),
+                    
+                  if (isLocked)
+                    const SizedBox(height: 28), // Placeholder for vertical balance when locked
                 ],
               ),
             ),
-
-            // Lock icon
-            if (isLocked)
-              const Center(
-                child: Icon(
-                  Icons.lock,
-                  size: 50,
-                  color: Colors.white70,
-                ),
-              ),
           ],
         ),
       ),

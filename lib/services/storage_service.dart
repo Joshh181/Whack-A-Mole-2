@@ -154,6 +154,26 @@ class StorageService {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
+  // ACHIEVEMENTS
+  // ════════════════════════════════════════════════════════════════════════════
+
+  Future<Map<String, int>> getAchievementProgress() async {
+    final p = await prefs;
+    String? jsonStr = p.getString(_userKey('achievements'));
+    if (jsonStr != null) {
+      Map<String, dynamic> decoded = jsonDecode(jsonStr);
+      return decoded.map((key, value) => MapEntry(key, value as int));
+    }
+    return {};
+  }
+
+  Future<void> saveAchievementProgress(Map<String, int> progress) async {
+    final p = await prefs;
+    String jsonStr = jsonEncode(progress);
+    await p.setString(_userKey('achievements'), jsonStr);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
   // HIGH SCORE
   // ════════════════════════════════════════════════════════════════════════════
 

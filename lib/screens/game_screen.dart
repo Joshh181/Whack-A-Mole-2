@@ -33,6 +33,14 @@ class _GameScreenState extends State<GameScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       gameProvider = Provider.of<GameProvider>(context, listen: false);
+      
+      // Ensure we don't show popups for achievements earned in previous sessions
+      for (var achievement in gameProvider.achievements) {
+        if (achievement.isCompleted) {
+          _completedAchievements.add(achievement.id);
+        }
+      }
+
       gameProvider.startGameWithLevel(widget.level);
       gameProvider.addListener(_onGameProviderChanged);
       // 🔊 Start background music when game begins
@@ -53,9 +61,14 @@ class _GameScreenState extends State<GameScreen> {
     if (!gameProvider.gameState.isPlaying && !_scoreSubmitted) {
       final int score = gameProvider.finalScore;
       debugPrint('🎯 Game ended — finalScore: $score');
-      // 🔊 Play game over sound and stop music
+      // 🔊 Stop music and play appropriate end sound
       _audioService.stopBackgroundMusic();
-      _audioService.playGameOverSound();
+      final int stars = widget.level.calculateStars(score);
+      if (stars > 0) {
+        _audioService.playGameCompletedSound();
+      } else {
+        _audioService.playGameOverSound();
+      }
       if (score > 0) {
         _scoreSubmitted = true;
         _submitScoreToLeaderboard(score);
@@ -72,7 +85,6 @@ class _GameScreenState extends State<GameScreen> {
       if (achievement.isCompleted &&
           !_completedAchievements.contains(achievement.id)) {
         _completedAchievements.add(achievement.id);
-        _audioService.playAchievementSound();
         _showAchievementPopup(achievement);
       }
     }

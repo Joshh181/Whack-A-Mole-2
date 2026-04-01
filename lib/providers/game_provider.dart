@@ -83,6 +83,26 @@ class GameProvider extends ChangeNotifier {
   GameProvider() {
     _initializeAchievements();
     _loadHighScore();
+    _loadAchievements();
+  }
+
+  Future<void> _loadAchievements() async {
+    final Map<String, int> savedProgress = await _storage.getAchievementProgress();
+    bool hasUpdates = false;
+    for (var achievement in _achievements) {
+      if (savedProgress.containsKey(achievement.id)) {
+        achievement.currentProgress = savedProgress[achievement.id]!;
+        hasUpdates = true;
+      }
+    }
+    if (hasUpdates) notifyListeners();
+  }
+
+  Future<void> _saveAchievements() async {
+    final Map<String, int> progressMap = {
+      for (var a in _achievements) a.id: a.currentProgress
+    };
+    await _storage.saveAchievementProgress(progressMap);
   }
 
   void _updateAchievement(String id, int progress) {
@@ -98,8 +118,15 @@ class GameProvider extends ChangeNotifier {
     );
 
     if (achievement.id.isNotEmpty) {
-      achievement.currentProgress = progress;
-      notifyListeners();
+      if (progress > achievement.threshold) {
+        progress = achievement.threshold;
+      }
+
+      if (achievement.currentProgress < progress) {
+        achievement.currentProgress = progress;
+        _saveAchievements();
+        notifyListeners();
+      }
     }
   }
 
