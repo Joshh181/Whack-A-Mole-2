@@ -44,6 +44,7 @@ class AudioService {
   bool _soundEffectsEnabled = true;
   bool _backgroundMusicEnabled = true;
   bool _isMusicPlaying = false;
+  bool get isMusicPlaying => _isMusicPlaying;
 
   static const double _normalVolume = 0.3;
 
@@ -72,7 +73,7 @@ class AudioService {
 
   AudioPlayer _getNextEffectPlayer() {
     final player = _effectPlayers[_currentEffectPlayer];
-    _currentEffectPlayer = (_currentEffectPlayer + 1) % _effectPlayers.length;
+    _currentEffectPlayer = (_currentEffectPlayer + 1) % _effectPlayers.length;  
     return player;
   }
 

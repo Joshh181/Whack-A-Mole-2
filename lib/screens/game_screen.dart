@@ -26,7 +26,7 @@ class _GameScreenState extends State<GameScreen> {
   final AudioService _audioService = AudioService();
   Set<int> bombMoles = {};
   Random random = Random();
-  Set<String> _completedAchievements = {};
+  final Set<String> _completedAchievements = {};
   bool _scoreSubmitted = false;
   Timer? _powerUpTickTimer;
 
@@ -97,7 +97,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  void _showAchievementPopup(achievement) {
+  void _showAchievementPopup(Achievement achievement) {
     final overlay = Overlay.of(context);
     late OverlayEntry overlayEntry;
 

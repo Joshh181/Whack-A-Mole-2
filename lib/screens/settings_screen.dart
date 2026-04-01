@@ -45,7 +45,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Sound Effects',
                   trailing: Switch(
                     value: settings.soundEffects,
-                    activeColor: Colors.green,
+                    activeThumbColor: Colors.green,
                     onChanged: (_) => settings.toggleSoundEffects(),
                   ),
                 ),
@@ -54,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Background Music',
                   trailing: Switch(
                     value: settings.backgroundMusic,
-                    activeColor: Colors.green,
+                    activeThumbColor: Colors.green,
                     onChanged: (_) => settings.toggleBackgroundMusic(),
                   ),
                 ),
@@ -74,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Push Notifications',
                   trailing: Switch(
                     value: settings.pushNotifications,
-                    activeColor: Colors.green,
+                    activeThumbColor: Colors.green,
                     onChanged: (_) => settings.togglePushNotifications(),
                   ),
                 ),
