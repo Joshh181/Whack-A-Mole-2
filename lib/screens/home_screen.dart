@@ -160,9 +160,9 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: Center(
                       child: Image.asset(
-                        'assets/images/MOLE.png',
+                        'assets/images/MOLEE.png',
                         width: 150,
-                        height: 150,
+                        height: 150, 
                         fit: BoxFit.contain,
                       ),
                     ),

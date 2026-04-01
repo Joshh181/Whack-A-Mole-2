@@ -122,7 +122,7 @@ class SettingsScreen extends StatelessWidget {
                             .toList(),
                         onChanged: (String? value) {
                           if (value != null) {
-                            settings?.setLanguage(value);
+                            settings.setLanguage(value);
                           }
                         },
                       ),

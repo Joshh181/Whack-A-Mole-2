@@ -61,17 +61,19 @@ class _SplashScreenState extends State<SplashScreen> {
             ],
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Game logo/icon
-              Text(
-                '🦫',
-                style: TextStyle(fontSize: 100),
+              Image.asset(
+                'assets/images/MOLEE.png',
+                width: 150,
+                height: 150, 
+                fit: BoxFit.contain,
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                 'WHACK-A-MOLE',
                 style: TextStyle(
                   fontSize: 36,
@@ -80,9 +82,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   letterSpacing: 2,
                 ),
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
               // Loading indicator
-              CircularProgressIndicator(
+              const CircularProgressIndicator(
                 color: Colors.white,
               ),
             ],

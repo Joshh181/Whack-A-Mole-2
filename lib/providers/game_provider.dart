@@ -73,6 +73,23 @@ class GameProvider extends ChangeNotifier {
   int _finalScore = 0;
   int get finalScore => _finalScore;
 
+  // Power-up countdown tracking
+  final List<DateTime?> _powerUpActivatedAt = [null, null, null];
+  final List<int> _powerUpDurations = [1, 10, 10]; // seconds for each power-up
+
+  /// Returns remaining fraction (1.0 → 0.0) for a power-up countdown, or 0 if inactive
+  double getPowerUpRemainingFraction(int index) {
+    if (!_gameState.isPowerUpActive(index) || _powerUpActivatedAt[index] == null) {
+      return 0.0;
+    }
+    final elapsed = DateTime.now().difference(_powerUpActivatedAt[index]!).inMilliseconds;
+    final total = _powerUpDurations[index] * 1000;
+    final remaining = (total - elapsed) / total;
+    return remaining.clamp(0.0, 1.0);
+  }
+
+  int getPowerUpDuration(int index) => _powerUpDurations[index];
+
   GameState get gameState => _gameState;
   int get highScore => _highScore;
   Level? get currentLevel => _currentLevel;
@@ -321,17 +338,21 @@ class GameProvider extends ChangeNotifier {
   }
 
   void usePowerUp(int index) {
+    _powerUpActivatedAt[index] = DateTime.now();
+
     if (index == 0) {
       _gameState.addTime(10);
       _gameState.activatePowerUp(0);
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(Duration(seconds: _powerUpDurations[0]), () {
         _gameState.deactivatePowerUp(0);
+        _powerUpActivatedAt[0] = null;
         notifyListeners();
       });
     } else if (index == 1) {
       _gameState.activatePowerUp(1);
-      Future.delayed(const Duration(seconds: 10), () {
+      Future.delayed(Duration(seconds: _powerUpDurations[1]), () {
         _gameState.deactivatePowerUp(1);
+        _powerUpActivatedAt[1] = null;
         notifyListeners();
       });
     } else if (index == 2) {
@@ -345,8 +366,9 @@ class GameProvider extends ChangeNotifier {
         }
       });
 
-      Future.delayed(const Duration(seconds: 10), () {
+      Future.delayed(Duration(seconds: _powerUpDurations[2]), () {
         _gameState.deactivatePowerUp(2);
+        _powerUpActivatedAt[2] = null;
 
         _moleTimer?.cancel();
         int normalDuration = currentLevel?.moleStayDuration ?? 1300;

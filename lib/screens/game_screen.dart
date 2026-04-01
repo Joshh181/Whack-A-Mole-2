@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -27,10 +28,15 @@ class _GameScreenState extends State<GameScreen> {
   Random random = Random();
   Set<String> _completedAchievements = {};
   bool _scoreSubmitted = false;
+  Timer? _powerUpTickTimer;
 
   @override
   void initState() {
     super.initState();
+    // Tick every 50ms to smoothly update power-up countdown rings
+    _powerUpTickTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       gameProvider = Provider.of<GameProvider>(context, listen: false);
       
@@ -50,6 +56,7 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _powerUpTickTimer?.cancel();
     gameProvider.removeListener(_onGameProviderChanged);
     _audioService.stopBackgroundMusic();
     super.dispose();
@@ -277,13 +284,9 @@ class _GameScreenState extends State<GameScreen> {
       child: Scaffold(
         body: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF87CEEB),
-                Color(0xFF32CD32),
-              ],
+            image: DecorationImage(
+              image: AssetImage('assets/images/BACKGROUND.png'),
+              fit: BoxFit.cover,
             ),
           ),
           child: SafeArea(
@@ -385,7 +388,7 @@ class _GameScreenState extends State<GameScreen> {
         const SizedBox(height: 10),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, top: 40),
+            padding: const EdgeInsets.only(left: 8, right: 8, top: 160),
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -547,6 +550,7 @@ class _GameScreenState extends State<GameScreen> {
                 label: 'Extra Time',
                 count: shopProvider.getPowerUpCount('extra_time'),
                 isActive: gp.gameState.isPowerUpActive(0),
+                remainingFraction: gp.getPowerUpRemainingFraction(0),
                 onTap: () {
                   if (shopProvider.usePowerUp('extra_time')) {
                     _audioService.playPowerUpSound();
@@ -559,6 +563,7 @@ class _GameScreenState extends State<GameScreen> {
                 label: 'Double Pts',
                 count: shopProvider.getPowerUpCount('double_points'),
                 isActive: gp.gameState.isPowerUpActive(1),
+                remainingFraction: gp.getPowerUpRemainingFraction(1),
                 onTap: () {
                   if (shopProvider.usePowerUp('double_points')) {
                     _audioService.playPowerUpSound();
@@ -571,6 +576,7 @@ class _GameScreenState extends State<GameScreen> {
                 label: 'Slow Mole',
                 count: shopProvider.getPowerUpCount('slow_mole'),
                 isActive: gp.gameState.isPowerUpActive(2),
+                remainingFraction: gp.getPowerUpRemainingFraction(2),
                 onTap: () {
                   if (shopProvider.usePowerUp('slow_mole')) {
                     _audioService.playPowerUpSound();
@@ -590,6 +596,7 @@ class _GameScreenState extends State<GameScreen> {
     required String label,
     required int count,
     required bool isActive,
+    required double remainingFraction,
     required VoidCallback onTap,
   }) {
     bool canUse = count > 0;
@@ -602,22 +609,44 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             Column(
               children: [
-                Container(
-                  width: 55,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.orange : Colors.red.shade400,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 28),
-                    ),
+                SizedBox(
+                  width: 62,
+                  height: 62,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Countdown ring (visible only when active)
+                      if (isActive)
+                        SizedBox(
+                          width: 62,
+                          height: 62,
+                          child: CircularProgressIndicator(
+                            value: remainingFraction,
+                            strokeWidth: 4,
+                            backgroundColor: Colors.white24,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.yellowAccent),
+                          ),
+                        ),
+                      // The power-up icon circle
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: isActive ? Colors.orange : Colors.red.shade400,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 3,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 4),
