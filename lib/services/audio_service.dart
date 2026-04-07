@@ -110,6 +110,12 @@ class AudioService {
   /// Play when activating a power-up
   Future<void> playPowerUpSound() => _playEffect('powerup.wav');
 
+  /// Play when an action is invalid (e.g. not enough coins)
+  Future<void> playError() => _playEffect('game_over.wav');
+
+  /// Play when a purchase is completed successfully
+  Future<void> playPurchase() => _playEffect('GAME-COMPLETED.wav');
+
   // ─── BACKGROUND MUSIC ─────────────────────────────────────
 
   Future<void> playBackgroundMusic() async {

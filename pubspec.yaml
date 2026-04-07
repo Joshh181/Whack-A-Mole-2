@@ -25,6 +25,7 @@ dependencies:
   
   # Supabase (Authentication & Database)
   supabase_flutter: ^2.3.4
+  google_fonts: ^8.0.2
 
 dev_dependencies:
   flutter_test:

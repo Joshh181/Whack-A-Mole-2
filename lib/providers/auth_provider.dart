@@ -177,6 +177,41 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> deleteAccount() async {
+    try {
+      final userId = _currentUser?.id;
+      if (userId == null) return false;
+
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      debugPrint('🗑️ Deleting full account via RPC for user: $userId');
+
+      // 1. Call the database function to delete all records and the auth account
+      await _supabase.rpc('delete_user');
+      debugPrint('✅ Server-side deletion successful');
+
+      // 2. Clear local storage
+      await _storage.clearUserData();
+      debugPrint('✅ Local user data cleared');
+
+      // 3. Clear local session (the account is already deleted from auth.users)
+      _currentUser = null;
+      debugPrint('✅ Local user session cleared');
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Error deleting account: $e';
+      debugPrint('❌ Account deletion error: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();

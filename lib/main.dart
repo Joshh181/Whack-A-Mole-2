@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -61,8 +62,9 @@ class WhackAMoleApp extends StatelessWidget {
           title: 'Whack-a-Mole',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
+            textTheme: GoogleFonts.lilitaOneTextTheme(),
           ),
           home: const SplashScreen(),
         );

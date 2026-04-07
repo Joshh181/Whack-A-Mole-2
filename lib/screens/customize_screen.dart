@@ -1,270 +1,264 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/shop_provider.dart';
+import '../services/audio_service.dart';
+import '../models/shop_item.dart';
 
 class CustomizeScreen extends StatelessWidget {
   const CustomizeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final shopProvider = Provider.of<ShopProvider>(context);
+    final audioService = AudioService();
+    final ownedSkins = shopProvider.items
+        .where((item) => item.type == ShopItemType.customization && item.isUnlocked)
+        .toList();
+
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF00E676), Color(0xFF00BCD4)],
+      body: Stack(
+        children: [
+          // ─── BACKGROUND ─────────────────────────────────
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF311B92), // Deep Purple
+                  Color(0xFF4527A0), // Deep Purple
+                  Color(0xFF512DA8), // Deep Purple
+                ],
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'CUSTOMIZE MOLE',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Mole preview with equipped skin
-              Consumer<ShopProvider>(
-                builder: (context, shopProvider, child) {
-                  final equippedSkin = shopProvider.equippedSkin;
-                  final moleImagePath = shopProvider.getMoleImagePath();
-                  
-                  return Container(
-                    margin: const EdgeInsets.all(20),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Mole with current skin
-                        Image.asset(
-                          moleImagePath,
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.contain,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          equippedSkin == null || equippedSkin.isEmpty
-                              ? 'Default Mole'
-                              : _getSkinName(equippedSkin),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Select a skin:',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // ─── CUSTOM TOP BAR ──────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    children: [
+                      _PremiumBackButton(onPressed: () => Navigator.pop(context)),
+                      const Spacer(),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Skins grid
-              Expanded(
-                child: Consumer<ShopProvider>(
-                  builder: (context, shopProvider, child) {
-                    final skins = shopProvider.getSkinItems();
-                    
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.9,
+                
+                // ─── TITLE & PREVIEW ─────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CUSTOMIZE',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            Text(
+                              'EQUIP YOUR LEGENDARY SKINS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      itemCount: skins.length + 1, // +1 for default mole
+                      const SizedBox(height: 32),
+                      
+                      // Active Skin Preview
+                      Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.3),
+                              blurRadius: 40,
+                              spreadRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: (shopProvider.equippedSkin == null || shopProvider.equippedSkin!.isEmpty)
+                              ? Image.asset('assets/images/MOLEE.png', width: 120, height: 120, fit: BoxFit.contain)
+                              : Image.asset(
+                                  shopProvider.items.firstWhere((i) => i.id == shopProvider.equippedSkin).imagePath ?? 'assets/images/MOLEE.png',
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => Text(
+                                    shopProvider.items.firstWhere((i) => i.id == shopProvider.equippedSkin).iconEmoji,
+                                    style: const TextStyle(fontSize: 80),
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 48),
+                
+                // ─── SKIN GRID ──────────────────────────────
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                    ),
+                    child: GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(28, 40, 28, 40),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 0.85,
+                        crossAxisSpacing: 20,
+                        mainAxisSpacing: 20,
+                      ),
+                      itemCount: ownedSkins.length + 1, // +1 for default
                       itemBuilder: (context, index) {
-                        // First item is default mole
                         if (index == 0) {
-                          final isEquipped = shopProvider.equippedSkin == null || 
-                                            shopProvider.equippedSkin!.isEmpty;
-                          return _buildSkinCard(
-                            context: context,
-                            skinId: '',
-                            skinName: 'Default Mole',
-                            imagePath: 'assets/images/33121063782.png',
-                            isUnlocked: true,
+                          // Default Skin
+                          final isEquipped = shopProvider.equippedSkin == null || shopProvider.equippedSkin!.isEmpty;
+                          return _SkinCard(
+                            imagePath: 'assets/images/MOLEE.png',
+                            name: 'DEFAULT',
                             isEquipped: isEquipped,
-                            onTap: () => shopProvider.equipSkin(''),
+                            onTap: () {
+                              audioService.playButtonClick();
+                              shopProvider.equipSkin('');
+                            },
                           );
                         }
                         
-                        // Rest are custom skins
-                        final skin = skins[index - 1];
-                        final isEquipped = shopProvider.equippedSkin == skin.id;
+                        final item = ownedSkins[index - 1];
+                        final isEquipped = shopProvider.equippedSkin == item.id;
                         
-                        return _buildSkinCard(
-                          context: context,
-                          skinId: skin.id,
-                          skinName: skin.name,
-                          imagePath: skin.imagePath!,
-                          isUnlocked: skin.isUnlocked,
+                        return _SkinCard(
+                          imagePath: item.imagePath,
+                          iconEmoji: item.iconEmoji,
+                          name: item.name.split(' ').first.toUpperCase(),
                           isEquipped: isEquipped,
-                          onTap: skin.isUnlocked
-                              ? () => shopProvider.equipSkin(skin.id)
-                              : null,
+                          onTap: () {
+                            audioService.playButtonClick();
+                            shopProvider.equipSkin(item.id);
+                          },
                         );
                       },
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildSkinCard({
-    required BuildContext context,
-    required String skinId,
-    required String skinName,
-    required String imagePath,
-    required bool isUnlocked,
-    required bool isEquipped,
-    VoidCallback? onTap,
-  }) {
+// ─── PREMIUM BACK BUTTON ──────────────────────────────
+class _PremiumBackButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _PremiumBackButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 45,
+        height: 45,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 30),
+      ),
+    );
+  }
+}
+
+// ─── SKIN SELECTION CARD ──────────────────────────────
+class _SkinCard extends StatelessWidget {
+  final String? imagePath;
+  final String? iconEmoji;
+  final String name;
+  final bool isEquipped;
+  final VoidCallback onTap;
+
+  const _SkinCard({
+    this.imagePath,
+    this.iconEmoji,
+    required this.name,
+    required this.isEquipped,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isEquipped ? Colors.green : Colors.transparent,
-            width: 3,
-          ),
-          boxShadow: isEquipped
-              ? [
-                  BoxShadow(
-                    color: Colors.green.withOpacity(0.4),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Skin image
-            Container(
-              width: 100,
-              height: 100,
+      child: Column(
+        children: [
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
-                color: isUnlocked
-                    ? Colors.purple.shade50
-                    : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(15),
+                color: isEquipped ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isEquipped ? Colors.amber : Colors.white.withOpacity(0.1),
+                  width: 2,
+                ),
+                boxShadow: isEquipped ? [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.3),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ] : [],
               ),
               child: Center(
-                child: isUnlocked
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          imagePath,
-                          width: 90,
-                          height: 90,
-                          fit: BoxFit.contain,
-                        ),
-                      )
-                    : const Icon(Icons.lock, size: 50, color: Colors.white),
+                child: imagePath != null
+                    ? Image.asset(imagePath!, width: 45, height: 45, fit: BoxFit.contain)
+                    : Text(
+                        iconEmoji ?? '🦫',
+                        style: const TextStyle(fontSize: 30),
+                      ),
               ),
             ),
-            const SizedBox(height: 12),
-            
-            // Skin name
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                skinName,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isEquipped ? 'EQUIPPED' : name,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: isEquipped ? Colors.amber : Colors.white54,
+              letterSpacing: 1,
             ),
-            const SizedBox(height: 4),
-            
-            // Status badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: isUnlocked
-                    ? (isEquipped ? Colors.green : Colors.grey.shade300)
-                    : Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                isUnlocked
-                    ? (isEquipped ? 'EQUIPPED ✓' : 'OWNED')
-                    : 'LOCKED 🔒',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isUnlocked
-                      ? (isEquipped ? Colors.white : Colors.black)
-                      : Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  String _getSkinName(String skinId) {
-    const skinNames = {
-      'skin_cowboy': 'Cowboy Mole',
-      'skin_wizard': 'Wizard Mole',
-      'skin_pirate': 'Pirate Mole',
-      'skin_ninja': 'Ninja Mole',
-    };
-    return skinNames[skinId] ?? 'Custom Mole';
   }
 }
