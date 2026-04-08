@@ -8,6 +8,7 @@ import '../providers/leaderboard_provider.dart';
 import '../models/level.dart';
 import '../config/app_colors.dart';
 import '../widgets/pause_dialog.dart';
+import '../widgets/animated_mole_hole.dart';
 import 'dart:math';
 import '../providers/level_provider.dart';
 import '../services/audio_service.dart';
@@ -230,43 +231,7 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // ✅ Dynamic sizing based on grid size
-  double _getMoleSize() {
-    int columns = widget.level.gridColumns;
-    if (columns == 3) return 170.0;  // 3×3 grid
-    if (columns == 4) return 130.0;  // 4×4 grid
-    return 100.0;  // 5×5 grid
-  }
 
-  double _getTopPosition(bool isActive) {
-    if (!isActive) return 500.0;
-    int columns = widget.level.gridColumns;
-    if (columns == 3) return -25.0;
-    if (columns == 4) return -25.0;  // ✅ Raised to match 3×3 centering
-    return -15.0;  // ✅ Raised for 5×5 grid
-  }
-
-  double _getBombSize() {
-    int columns = widget.level.gridColumns;
-    if (columns == 3) return 70.0;
-    if (columns == 4) return 55.0;
-    return 45.0;
-  }
-
-  double _getBombTopPosition(bool isActive) {
-    if (!isActive) return 500.0;
-    int columns = widget.level.gridColumns;
-    if (columns == 3) return -1.0;
-    if (columns == 4) return -1.0;  // ✅ Raised to match 3×3
-    return -5.0;  // ✅ Raised for 5×5 grid
-  }
-
-  double _getSkinPositionOffset() {
-    int columns = widget.level.gridColumns;
-    if (columns == 3) return 20.0;
-    if (columns == 4) return 15.0;
-    return 12.0;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,84 +418,38 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildHole(
       int index, bool isMoleActive, bool hasBomb, GameProvider gp) {
-    final moleSize = _getMoleSize();
-    final moleTopPosition = _getTopPosition(isMoleActive);
-    final bombSize = _getBombSize();
-    final bombTopPosition = _getBombTopPosition(isMoleActive);
-    final skinPositionOffset = _getSkinPositionOffset();
+    return Consumer<ShopProvider>(
+      builder: (context, shopProvider, child) {
+        final moleImagePath = shopProvider.getMoleImagePath();
+        final isOriginalMole = moleImagePath.contains('33121063782.png');
 
-    return GestureDetector(
-      onTap: () {
-        if (isMoleActive) {
-          if (hasBomb) {
-            _audioService.playBombSound();
-            gp.hitBomb(widget.level.bombTimePenalty);
-            bombMoles.remove(index);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content:
-                    Text('💣 BOMB! -${widget.level.bombTimePenalty} seconds!'),
-                duration: const Duration(milliseconds: 800),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else {
-            _audioService.playWhackSound();
-            gp.whackMole(index);
-          }
-        }
-      },
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        alignment: Alignment.center,
-        children: [
-          Image.asset(
-            'assets/images/HOLE.png',
-            fit: BoxFit.contain,
-          ),
-          if (hasBomb)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOut,
-              top: bombTopPosition,
-              child: Center(
-                child: Image.asset(
-                  'assets/images/bomb.png',
-                  width: bombSize,
-                  height: bombSize,
-                  fit: BoxFit.contain,
+        return AnimatedMoleHole(
+          key: ValueKey(index),
+          isMoleActive: isMoleActive,
+          hasBomb: hasBomb,
+          gridColumns: widget.level.gridColumns,
+          moleImagePath: moleImagePath,
+          isOriginalMole: isOriginalMole,
+          onTap: () {
+            if (hasBomb) {
+              _audioService.playBombSound();
+              gp.hitBomb(widget.level.bombTimePenalty);
+              bombMoles.remove(index);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content:
+                      Text('💣 BOMB! -${widget.level.bombTimePenalty} seconds!'),
+                  duration: const Duration(milliseconds: 800),
+                  backgroundColor: Colors.red,
                 ),
-              ),
-            )
-          else
-            Consumer<ShopProvider>(
-              builder: (context, shopProvider, child) {
-                final moleImagePath = shopProvider.getMoleImagePath();
-                final isOriginalMole =
-                    moleImagePath.contains('33121063782.png');
-                final adjustedSize =
-                    isOriginalMole ? moleSize : moleSize * 0.60;
-                final adjustedTopPosition = isOriginalMole
-                    ? moleTopPosition
-                    : moleTopPosition + skinPositionOffset;
-
-                return AnimatedPositioned(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOut,
-                  top: adjustedTopPosition,
-                  child: Center(
-                    child: Image.asset(
-                      moleImagePath,
-                      width: adjustedSize,
-                      height: adjustedSize,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                );
-              },
-            ),
-        ],
-      ),
+              );
+            } else {
+              _audioService.playWhackSound();
+              gp.whackMole(index);
+            }
+          },
+        );
+      },
     );
   }
 

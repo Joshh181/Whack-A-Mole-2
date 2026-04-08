@@ -159,14 +159,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ],
                         ),
                         child: Center(
-                          child: Hero(
-                            tag: 'mole_icon',
-                            child: Image.asset(
-                              'assets/images/MOLEE.png',
-                              width: 170,
-                              height: 170, 
-                              fit: BoxFit.contain,
-                            ),
+                          child: Image.asset(
+                            'assets/images/MOLEE.png',
+                            width: 170,
+                            height: 170, 
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),

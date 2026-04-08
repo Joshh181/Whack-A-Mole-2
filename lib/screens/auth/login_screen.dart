@@ -148,30 +148,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           builder: (context, child) {
                             return Transform.translate(
                               offset: Offset(0, -_floatAnimation.value),
-                              child: Hero(
-                                tag: 'mole_icon',
-                                child: Container(
-                                  width: 130,
-                                  height: 130,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.purple.withOpacity(0.2),
-                                        blurRadius: 30,
-                                        spreadRadius: 5,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      '🦫',
-                                      style: TextStyle(fontSize: 85),
-                                    ),
-                                  ),
-                                ),
+                              child: Image.asset(
+                                'assets/images/MOLEE.png',
+                                width: 140,
+                                height: 140,
+                                fit: BoxFit.contain,
                               ),
                             );
                           },
