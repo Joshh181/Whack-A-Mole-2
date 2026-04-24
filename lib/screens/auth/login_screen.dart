@@ -80,7 +80,9 @@ class _LoginScreenState extends State<LoginScreen>
           ),
           backgroundColor: Colors.orange.shade800.withOpacity(0.95),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );

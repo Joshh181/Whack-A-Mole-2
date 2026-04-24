@@ -12,7 +12,8 @@ class SignUpScreen extends StatefulWidget {
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMixin {
+class _SignUpScreenState extends State<SignUpScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -30,27 +31,28 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    
+
     // Fade in animation
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
-    
+
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
+
     // Floating Mole
     _floatController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _floatAnimation = Tween<double>(begin: 0, end: 15).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
-    
+
     _fadeController.forward();
   }
 
@@ -82,7 +84,9 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
           ),
           backgroundColor: Colors.orange.shade800.withOpacity(0.95),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -102,14 +106,16 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
       final shopProvider = Provider.of<ShopProvider>(context, listen: false);
       await shopProvider.resetData();
       await shopProvider.loadUserData();
-      
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const HomeScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
             transitionDuration: const Duration(milliseconds: 800),
           ),
         );
@@ -132,7 +138,9 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
           ),
           backgroundColor: Colors.red.shade800.withOpacity(0.9),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -151,14 +159,14 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF880E4F), 
-                  Color(0xFFAD1457), 
+                  Color(0xFF880E4F),
+                  Color(0xFFAD1457),
                   Color(0xFFC2185B),
                 ],
               ),
             ),
           ),
-          
+
           SafeArea(
             child: Stack(
               children: [
@@ -167,7 +175,11 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                   opacity: _fadeAnimation,
                   child: Center(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(left: 32, right: 32, top: 80),
+                      padding: const EdgeInsets.only(
+                        left: 32,
+                        right: 32,
+                        top: 80,
+                      ),
                       child: Form(
                         key: _formKey,
                         child: Column(
@@ -189,7 +201,7 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               },
                             ),
                             const SizedBox(height: 28),
-                            
+
                             // Premium Title
                             ShaderMask(
                               shaderCallback: (bounds) => const LinearGradient(
@@ -216,7 +228,7 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               ),
                             ),
                             const SizedBox(height: 40),
-                            
+
                             // Username field
                             _buildPremiumTextField(
                               controller: _usernameController,
@@ -224,13 +236,15 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               hint: 'How should we call you?',
                               icon: Icons.person_rounded,
                               validator: (value) {
-                                if (value == null || value.isEmpty) return 'Username is required';
-                                if (value.length < 3) return 'Too short (min 3)';
+                                if (value == null || value.isEmpty)
+                                  return 'Username is required';
+                                if (value.length < 3)
+                                  return 'Too short (min 3)';
                                 return null;
                               },
                             ),
                             const SizedBox(height: 18),
-                            
+
                             // Email field
                             _buildPremiumTextField(
                               controller: _emailController,
@@ -239,13 +253,15 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               icon: Icons.alternate_email_rounded,
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
-                                if (value == null || value.isEmpty) return 'Email is required';
-                                if (!value.contains('@')) return 'Invalid format';
+                                if (value == null || value.isEmpty)
+                                  return 'Email is required';
+                                if (!value.contains('@'))
+                                  return 'Invalid format';
                                 return null;
                               },
                             ),
                             const SizedBox(height: 18),
-                            
+
                             // Password field
                             _buildPremiumTextField(
                               controller: _passwordController,
@@ -255,21 +271,25 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               obscureText: _obscurePassword,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscurePassword 
-                                      ? Icons.visibility_off_rounded 
+                                  _obscurePassword
+                                      ? Icons.visibility_off_rounded
                                       : Icons.visibility_rounded,
                                   color: Colors.white38,
                                 ),
-                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty) return 'Required';
-                                if (value.length < 6) return 'At least 6 characters';
+                                if (value == null || value.isEmpty)
+                                  return 'Required';
+                                if (value.length < 6)
+                                  return 'At least 6 characters';
                                 return null;
                               },
                             ),
                             const SizedBox(height: 18),
-                            
+
                             // Confirm password field
                             _buildPremiumTextField(
                               controller: _confirmPasswordController,
@@ -279,25 +299,32 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               obscureText: _obscureConfirmPassword,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscureConfirmPassword 
-                                      ? Icons.visibility_off_rounded 
+                                  _obscureConfirmPassword
+                                      ? Icons.visibility_off_rounded
                                       : Icons.visibility_rounded,
                                   color: Colors.white38,
                                 ),
-                                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                onPressed: () => setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                ),
                               ),
                               validator: (value) {
-                                if (value != _passwordController.text) return 'Mismatch';
+                                if (value != _passwordController.text)
+                                  return 'Mismatch';
                                 return null;
                               },
                             ),
                             const SizedBox(height: 48),
-                            
+
                             // Sign Up Button
                             _PremiumActionButton(
                               label: 'CREATE ACCOUNT',
                               isLoading: _isLoading,
-                              gradient: const [Color(0xFFE91E63), Color(0xFFC2185B)],
+                              gradient: const [
+                                Color(0xFFE91E63),
+                                Color(0xFFC2185B),
+                              ],
                               onPressed: _handleSignUp,
                             ),
                             const SizedBox(height: 40),
@@ -320,9 +347,15 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
                       ),
-                      child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
@@ -372,14 +405,24 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 15),
+              hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.2),
+                fontSize: 15,
+              ),
               prefixIcon: Icon(icon, color: Colors.white38, size: 22),
               suffixIcon: suffixIcon,
               // Make validation error text high-contrast so it's readable on bright backgrounds
-              errorStyle: TextStyle(color: Color(0xFFFFD54F), fontSize: 13, fontWeight: FontWeight.w700),
+              errorStyle: TextStyle(
+                color: Color(0xFFFFD54F),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
               errorMaxLines: 2,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 20,
+              ),
             ),
             validator: validator,
           ),
@@ -410,7 +453,11 @@ class _PremiumActionButton extends StatelessWidget {
         width: double.infinity,
         height: 64,
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: isLoading ? [Colors.grey.shade800, Colors.grey.shade900] : gradient),
+          gradient: LinearGradient(
+            colors: isLoading
+                ? [Colors.grey.shade800, Colors.grey.shade900]
+                : gradient,
+          ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             if (!isLoading)
@@ -423,7 +470,14 @@ class _PremiumActionButton extends StatelessWidget {
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Colors.white,
+                  ),
+                )
               : Text(
                   label,
                   style: const TextStyle(
