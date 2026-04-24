@@ -137,7 +137,7 @@ class _AnimatedMoleHoleState extends State<AnimatedMoleHole>
     return GestureDetector(
       onTap: widget.isMoleActive ? widget.onTap : null,
       child: Stack(
-        clipBehavior: Clip.hardEdge,
+        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
           // Hole background
@@ -186,17 +186,20 @@ class _AnimatedMoleHoleState extends State<AnimatedMoleHole>
 
               return Positioned(
                 top: topPos,
-                child: Transform.translate(
-                  offset: Offset(0, yOffset + wobbleY),
-                  child: Transform.rotate(
-                    angle: wobbleRotation,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Image.asset(
-                        imagePath,
-                        width: size,
-                        height: size,
-                        fit: BoxFit.contain,
+                child: ClipRect(
+                  clipper: _MoleClipper(),
+                  child: Transform.translate(
+                    offset: Offset(0, yOffset + wobbleY),
+                    child: Transform.rotate(
+                      angle: wobbleRotation,
+                      child: Transform.scale(
+                        scale: scale,
+                        child: Image.asset(
+                          imagePath,
+                          width: size,
+                          height: size,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),
@@ -208,4 +211,15 @@ class _AnimatedMoleHoleState extends State<AnimatedMoleHole>
       ),
     );
   }
+}
+class _MoleClipper extends CustomClipper<Rect> {
+  @override
+  Rect getClip(Size size) {
+    // Allow the mole to extend above its container (for hats) 
+    // but clip it at the bottom so it stays "in the hole"
+    return Rect.fromLTRB(-50, -100, size.width + 50, size.height);
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Rect> oldClipper) => false;
 }

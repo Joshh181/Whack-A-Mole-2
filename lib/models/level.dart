@@ -54,15 +54,15 @@ class Level {
 
   factory Level.fromJson(Map<String, dynamic> json) {
     return Level(
-      levelNumber: json['levelNumber'],
+      levelNumber: json['levelNumber'] ?? 1,
       highScore: json['highScore'] ?? 0,
       stars: json['stars'] ?? 0,
       isUnlocked: json['isUnlocked'] ?? false,
-      gridRows: json['gridRows'],
-      gridColumns: json['gridColumns'],
-      moleStayDuration: json['moleStayDuration'],
-      bombChance: json['bombChance'],
-      bombTimePenalty: json['bombTimePenalty'],
+      gridRows: json['gridRows'] ?? 3,
+      gridColumns: json['gridColumns'] ?? 3,
+      moleStayDuration: json['moleStayDuration'] ?? 1000,
+      bombChance: json['bombChance'] ?? 10,
+      bombTimePenalty: json['bombTimePenalty'] ?? 3,
     );
   }
 
@@ -77,8 +77,8 @@ class Level {
           isUnlocked: true,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1090, // 1.0s - Very Easy
-          bombChance: 0, // No bombs
+          moleStayDuration: 1070, // 1.07s - Very Easy
+          bombChance: 5, // 5% bombs
           bombTimePenalty: 2,
         );
       case 2:
@@ -86,8 +86,8 @@ class Level {
           levelNumber: 2,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1060, // 0.95s
-          bombChance: 5, // 5% bombs
+          moleStayDuration: 1040, // 1.04s
+          bombChance: 10, // 10% bombs
           bombTimePenalty: 2,
         );
       case 3:
@@ -95,8 +95,8 @@ class Level {
           levelNumber: 3,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1030, // 0.9s
-          bombChance: 10, // 5% bombs
+          moleStayDuration: 1010, // 1.01s
+          bombChance: 15, // 15% bombs
           bombTimePenalty: 3,
         );
       case 4:
@@ -104,8 +104,8 @@ class Level {
           levelNumber: 4,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1000, // 0.85s
-          bombChance: 15, // 10% bombs
+          moleStayDuration: 980, // 0.98s
+          bombChance: 20, // 20% bombs
           bombTimePenalty: 3,
         );
       case 5:
@@ -113,8 +113,8 @@ class Level {
           levelNumber: 5,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 970, // 0.8s
-          bombChance: 15, // 15% bombs
+          moleStayDuration: 950, // 0.95s
+          bombChance: 25, // 25% bombs
           bombTimePenalty: 4,
         );
 
@@ -126,8 +126,8 @@ class Level {
           levelNumber: 6,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 940, // 0.75s - More holes, faster
-          bombChance: 20, // 20% bombs
+          moleStayDuration: 920, // 0.92s - More holes, faster
+          bombChance: 30, // 30% bombs
           bombTimePenalty: 4,
         );
       case 7:
@@ -135,8 +135,8 @@ class Level {
           levelNumber: 7,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 910, // 0.7s
-          bombChance: 20, // 20% bombs
+          moleStayDuration: 890, // 0.89s
+          bombChance: 35, // 35% bombs
           bombTimePenalty: 5,
         );
       case 8:
@@ -144,8 +144,8 @@ class Level {
           levelNumber: 8,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 890, // 0.65s
-          bombChance: 20, // 20% bombs
+          moleStayDuration: 860, // 0.86s
+          bombChance: 40, // 40% bombs
           bombTimePenalty: 5,
         );
 
@@ -157,8 +157,8 @@ class Level {
           levelNumber: 9,
           gridRows: 5,
           gridColumns: 5,
-          moleStayDuration: 870, // 0.6s - Very challenging!
-          bombChance: 25, // 25% bombs
+          moleStayDuration: 830, // 0.83s - Very challenging!
+          bombChance: 45, // 45% bombs
           bombTimePenalty: 6,
         );
       case 10:
@@ -166,8 +166,8 @@ class Level {
           levelNumber: 10,
           gridRows: 5,
           gridColumns: 5,
-          moleStayDuration: 850, // 0.64s - EXTREME!
-          bombChance: 30, // 30% bombs
+          moleStayDuration: 800, // 0.80s - EXTREME!
+          bombChance: 50, // 50% bombs
           bombTimePenalty: 7,
         );
 

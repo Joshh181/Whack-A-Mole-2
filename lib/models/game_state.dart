@@ -4,6 +4,7 @@ class GameState {
   bool isPlaying;
   bool isPaused;
   int activeMoleIndex;
+  bool isBomb;
   List<bool> activePowerUps;
 
   GameState({
@@ -12,6 +13,7 @@ class GameState {
     this.isPlaying = false,
     this.isPaused = false,
     this.activeMoleIndex = -1,
+    this.isBomb = false,
     List<bool>? activePowerUps,
   }) : activePowerUps = activePowerUps ?? [false, false, false];
 
@@ -21,6 +23,7 @@ class GameState {
     isPlaying = false;
     isPaused = false;
     activeMoleIndex = -1;
+    isBomb = false;
     activePowerUps = [false, false, false];
   }
 

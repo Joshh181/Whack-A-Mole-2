@@ -173,6 +173,16 @@ class StorageService {
     await p.setString(_userKey('achievements'), jsonStr);
   }
 
+  Future<List<String>> getClaimedRewards() async {
+    final p = await prefs;
+    return p.getStringList(_userKey('claimed_rewards')) ?? [];
+  }
+
+  Future<void> saveClaimedRewards(List<String> claimedIds) async {
+    final p = await prefs;
+    await p.setStringList(_userKey('claimed_rewards'), claimedIds);
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   // HIGH SCORE
   // ════════════════════════════════════════════════════════════════════════════
@@ -185,6 +195,30 @@ class StorageService {
   Future<void> saveHighScore(int score) async {
     final p = await prefs;
     await p.setInt(_userKey('high_score'), score);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // LEVELS
+  // ════════════════════════════════════════════════════════════════════════════
+
+  Future<String?> getLevelsData() async {
+    final p = await prefs;
+    return p.getString(_userKey('levels_data'));
+  }
+
+  Future<void> saveLevelsData(String json) async {
+    final p = await prefs;
+    await p.setString(_userKey('levels_data'), json);
+  }
+
+  Future<int> getCurrentLevel() async {
+    final p = await prefs;
+    return p.getInt(_userKey('current_level')) ?? 1;
+  }
+
+  Future<void> saveCurrentLevel(int level) async {
+    final p = await prefs;
+    await p.setInt(_userKey('current_level'), level);
   }
 
   // ════════════════════════════════════════════════════════════════════════════

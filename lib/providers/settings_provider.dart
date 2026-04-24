@@ -10,12 +10,14 @@ class SettingsProvider with ChangeNotifier {
   bool _soundEffects = true;
   bool _backgroundMusic = true;
   bool _pushNotifications = true;
+  bool _hapticFeedback = true;
   String _language = 'English';
 
   // Getters
   bool get soundEffects => _soundEffects;
   bool get backgroundMusic => _backgroundMusic;
   bool get pushNotifications => _pushNotifications;
+  bool get hapticFeedback => _hapticFeedback;
   String get language => _language;
 
   SettingsProvider() {
@@ -35,6 +37,9 @@ class SettingsProvider with ChangeNotifier {
       
       final lang = await _storage.getString(AppConstants.keyLanguage);
       _language = lang;
+
+      final haptic = await _storage.getBool(AppConstants.keyHapticFeedback);
+      _hapticFeedback = haptic;
       
       // Sync AudioService with loaded settings
       _audioService.setSoundEffectsEnabled(_soundEffects);
@@ -70,6 +75,12 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setLanguage(String newLanguage) async {
     _language = newLanguage;
     await _storage.saveString(AppConstants.keyLanguage, _language);
+    notifyListeners();
+  }
+
+  Future<void> toggleHapticFeedback() async {
+    _hapticFeedback = !_hapticFeedback;
+    await _storage.saveBool(AppConstants.keyHapticFeedback, _hapticFeedback);
     notifyListeners();
   }
 }

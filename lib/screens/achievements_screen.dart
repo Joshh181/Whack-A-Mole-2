@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/game_provider.dart';
+import '../providers/shop_provider.dart';
 
 class AchievementsScreen extends StatelessWidget {
   const AchievementsScreen({super.key});
@@ -215,6 +216,95 @@ class _AchievementCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          
+          // REWARD & CLAIM BUTTON
+          const SizedBox(width: 12),
+          Consumer<ShopProvider>(
+            builder: (context, shopProvider, child) {
+              final gameProvider = context.read<GameProvider>();
+              
+              if (achievement.isClaimed) {
+                return Column(
+                  children: [
+                    const Icon(Icons.check_circle_rounded, color: Colors.amber, size: 28),
+                    const SizedBox(height: 4),
+                    Text(
+                      'CLAIMED',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.amber.withOpacity(0.8),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                );
+              }
+              
+              if (isCompleted) {
+                return Column(
+                  children: [
+                    Text(
+                      '+${achievement.coinReward}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.amber,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Text(
+                      'COINS',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.amber,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () => gameProvider.claimReward(achievement.id, shopProvider),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'CLAIM',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              
+              return Column(
+                children: [
+                  Text(
+                    '${achievement.coinReward}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withOpacity(0.3),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  Text(
+                    'COINS',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

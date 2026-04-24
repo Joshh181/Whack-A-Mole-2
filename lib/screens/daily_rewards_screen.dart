@@ -167,7 +167,7 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          '🎉 Day ${reward.day} claimed! +${reward.coins} coins. Come back in 24 hours.',
+                                          'Day ${reward.day} claimed! +${reward.coins} coins. Come back in 24 hours.',
                                         ),
                                         backgroundColor: Colors.green,
                                         duration: const Duration(seconds: 3),

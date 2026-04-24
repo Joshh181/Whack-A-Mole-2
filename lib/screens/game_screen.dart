@@ -25,8 +25,6 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   late GameProvider gameProvider;
   final AudioService _audioService = AudioService();
-  Set<int> bombMoles = {};
-  Random random = Random();
   final Set<String> _completedAchievements = {};
   bool _scoreSubmitted = false;
   Timer? _powerUpTickTimer;
@@ -356,6 +354,7 @@ class _GameScreenState extends State<GameScreen> {
             padding: const EdgeInsets.only(left: 8, right: 8, top: 160),
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
+              clipBehavior: Clip.none,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: widget.level.gridColumns,
                 crossAxisSpacing: 3,
@@ -365,16 +364,7 @@ class _GameScreenState extends State<GameScreen> {
               itemCount: widget.level.totalHoles,
               itemBuilder: (context, index) {
                 bool isMoleActive = gp.gameState.activeMoleIndex == index;
-                bool hasBomb = bombMoles.contains(index);
-
-                if (isMoleActive &&
-                    !bombMoles.contains(index) &&
-                    widget.level.bombChance > 0) {
-                  if (random.nextInt(100) < widget.level.bombChance) {
-                    bombMoles.add(index);
-                    hasBomb = true;
-                  }
-                }
+                bool hasBomb = isMoleActive && gp.gameState.isBomb;
 
                 return _buildHole(index, isMoleActive, hasBomb, gp);
               },
@@ -434,7 +424,6 @@ class _GameScreenState extends State<GameScreen> {
             if (hasBomb) {
               _audioService.playBombSound();
               gp.hitBomb(widget.level.bombTimePenalty);
-              bombMoles.remove(index);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content:

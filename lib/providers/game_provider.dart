@@ -12,7 +12,9 @@ class Achievement {
   final String description;
   final int threshold;
   final String iconEmoji;
+  final int coinReward;
   int currentProgress;
+  bool isClaimed;
 
   Achievement({
     required this.id,
@@ -20,7 +22,9 @@ class Achievement {
     required this.description,
     required this.threshold,
     required this.iconEmoji,
+    this.coinReward = 0,
     this.currentProgress = 0,
+    this.isClaimed = false,
   });
 
   double get progressPercentage {
@@ -38,7 +42,9 @@ class Achievement {
       'description': description,
       'threshold': threshold,
       'iconEmoji': iconEmoji,
+      'coinReward': coinReward,
       'currentProgress': currentProgress,
+      'isClaimed': isClaimed,
     };
   }
 
@@ -49,7 +55,9 @@ class Achievement {
       description: json['description'],
       threshold: json['threshold'],
       iconEmoji: json['iconEmoji'],
+      coinReward: json['coinReward'] ?? 0,
       currentProgress: json['currentProgress'] ?? 0,
+      isClaimed: json['isClaimed'] ?? false,
     );
   }
 }
@@ -97,22 +105,44 @@ class GameProvider extends ChangeNotifier {
   final List<Achievement> _achievements = [];
   List<Achievement> get achievements => _achievements;
 
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
   GameProvider() {
     _initializeAchievements();
-    _loadHighScore();
-    _loadAchievements();
+    // High score and achievements will be loaded via loadUserData() when authenticated
+  }
+
+  Future<void> loadUserData() async {
+    try {
+      await _loadHighScore();
+      await _loadAchievements();
+      _isInitialized = true;
+      notifyListeners();
+      debugPrint('✅ GameProvider data loaded for user: ${_storage.getUserId()}');
+    } catch (e) {
+      debugPrint('❌ Error loading game data: $e');
+      _isInitialized = true;
+      notifyListeners();
+    }
   }
 
   Future<void> _loadAchievements() async {
-    final Map<String, int> savedProgress = await _storage.getAchievementProgress();
-    bool hasUpdates = false;
-    for (var achievement in _achievements) {
-      if (savedProgress.containsKey(achievement.id)) {
-        achievement.currentProgress = savedProgress[achievement.id]!;
-        hasUpdates = true;
+    try {
+      final Map<String, int> savedProgress = await _storage.getAchievementProgress();
+      final List<String> claimedRewards = await _storage.getClaimedRewards();
+      
+      for (var achievement in _achievements) {
+        if (savedProgress.containsKey(achievement.id)) {
+          achievement.currentProgress = savedProgress[achievement.id]!;
+        }
+        if (claimedRewards.contains(achievement.id)) {
+          achievement.isClaimed = true;
+        }
       }
+    } catch (e) {
+      debugPrint('Error loading achievement progress: $e');
     }
-    if (hasUpdates) notifyListeners();
   }
 
   Future<void> _saveAchievements() async {
@@ -120,6 +150,24 @@ class GameProvider extends ChangeNotifier {
       for (var a in _achievements) a.id: a.currentProgress
     };
     await _storage.saveAchievementProgress(progressMap);
+
+    final List<String> claimedIds = _achievements
+        .where((a) => a.isClaimed)
+        .map((a) => a.id)
+        .toList();
+    await _storage.saveClaimedRewards(claimedIds);
+  }
+
+  Future<bool> claimReward(String achievementId, dynamic shopProvider) async {
+    final achievement = _achievements.firstWhere((a) => a.id == achievementId);
+    if (achievement.isCompleted && !achievement.isClaimed) {
+      achievement.isClaimed = true;
+      shopProvider.addCoins(achievement.coinReward);
+      await _saveAchievements();
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   void _updateAchievement(String id, int progress) {
@@ -173,6 +221,7 @@ class GameProvider extends ChangeNotifier {
         title: 'First Whack',
         description: 'Whack your first mole',
         threshold: 1,
+        coinReward: 50,
         currentProgress: 0,
       ),
       Achievement(
@@ -181,6 +230,7 @@ class GameProvider extends ChangeNotifier {
         title: 'Century Club',
         description: 'Score 100 points in a single game',
         threshold: 100,
+        coinReward: 100,
         currentProgress: 0,
       ),
       Achievement(
@@ -189,6 +239,7 @@ class GameProvider extends ChangeNotifier {
         title: 'Speed Demon',
         description: 'Whack 10 moles in 10 seconds',
         threshold: 10,
+        coinReward: 150,
         currentProgress: 0,
       ),
       Achievement(
@@ -197,6 +248,7 @@ class GameProvider extends ChangeNotifier {
         title: 'Master Whacker',
         description: 'Reach a score of 500',
         threshold: 500,
+        coinReward: 250,
         currentProgress: 0,
       ),
       Achievement(
@@ -205,6 +257,7 @@ class GameProvider extends ChangeNotifier {
         title: 'On Fire',
         description: 'Get a 15 whack combo',
         threshold: 15,
+        coinReward: 200,
         currentProgress: 0,
       ),
       Achievement(
@@ -213,6 +266,7 @@ class GameProvider extends ChangeNotifier {
         title: 'Perfect Game',
         description: 'Complete a level without missing',
         threshold: 1,
+        coinReward: 300,
         currentProgress: 0,
       ),
       Achievement(
@@ -221,6 +275,7 @@ class GameProvider extends ChangeNotifier {
         title: 'Three Stars',
         description: 'Get 3 stars on any level',
         threshold: 1,
+        coinReward: 100,
         currentProgress: 0,
       ),
       Achievement(
@@ -229,6 +284,7 @@ class GameProvider extends ChangeNotifier {
         title: 'Dedicated Player',
         description: 'Play 50 games',
         threshold: 50,
+        coinReward: 500,
         currentProgress: 0,
       ),
     ]);
@@ -291,15 +347,28 @@ class GameProvider extends ChangeNotifier {
     int totalHoles = level?.totalHoles ?? 12;
     _gameState.activeMoleIndex = _random.nextInt(totalHoles);
 
+    // Determine if the newly spawned mole is actually a bomb
+    if (level != null && level.bombChance > 0) {
+      _gameState.isBomb = _random.nextInt(100) < level.bombChance;
+    } else {
+      _gameState.isBomb = false;
+    }
+
     _currentMoleId++;
     final int thisMoleId = _currentMoleId;
 
     notifyListeners();
 
-    int moleDuration = level?.moleStayDuration ?? 1300;
-    Future.delayed(Duration(milliseconds: moleDuration), () {
+    int baseDuration = level?.moleStayDuration ?? 1300;
+    // Apply Slow Mole power-up (index 2) if active
+    int moleStayDuration = _gameState.isPowerUpActive(2) 
+        ? (baseDuration * 1.5).toInt() 
+        : baseDuration;
+
+    Future.delayed(Duration(milliseconds: moleStayDuration), () {
       if (_gameState.activeMoleIndex != -1 && thisMoleId == _currentMoleId) {
         _gameState.activeMoleIndex = -1;
+        _gameState.isBomb = false;
         _currentCombo = 0;
         notifyListeners();
       }
@@ -370,13 +439,15 @@ class GameProvider extends ChangeNotifier {
         _gameState.deactivatePowerUp(2);
         _powerUpActivatedAt[2] = null;
 
-        _moleTimer?.cancel();
-        int normalDuration = currentLevel?.moleStayDuration ?? 1300;
-        _moleTimer = Timer.periodic(Duration(milliseconds: normalDuration + 300), (timer) {
-          if (!_gameState.isPaused && _gameState.isPlaying) {
-            _spawnMole(currentLevel);
-          }
-        });
+        if (_gameState.isPlaying) {
+          _moleTimer?.cancel();
+          int normalDuration = currentLevel?.moleStayDuration ?? 1300;
+          _moleTimer = Timer.periodic(Duration(milliseconds: normalDuration + 300), (timer) {
+            if (!_gameState.isPaused && _gameState.isPlaying) {
+              _spawnMole(currentLevel);
+            }
+          });
+        }
 
         notifyListeners();
       });
@@ -429,6 +500,18 @@ class GameProvider extends ChangeNotifier {
     } else {
       startGame();
     }
+  }
+
+  void resetData() {
+    _isInitialized = false;
+    _highScore = 0;
+    _totalMolesWhacked = 0;
+    _gamesPlayed = 0;
+    for (var a in _achievements) {
+      a.currentProgress = 0;
+      a.isClaimed = false;
+    }
+    notifyListeners();
   }
 
   @override

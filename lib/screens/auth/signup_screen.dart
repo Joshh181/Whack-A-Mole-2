@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/shop_provider.dart';
+import '../../services/connectivity_service.dart';
 import '../home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -66,6 +67,27 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
 
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Check connectivity before attempting network call
+    final connected = await ConnectivityService.hasConnection();
+    if (!connected && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.wifi_off, color: Colors.white),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('No internet connection')),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade800.withOpacity(0.95),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -353,6 +375,9 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 15),
               prefixIcon: Icon(icon, color: Colors.white38, size: 22),
               suffixIcon: suffixIcon,
+              // Make validation error text high-contrast so it's readable on bright backgrounds
+              errorStyle: TextStyle(color: Color(0xFFFFD54F), fontSize: 13, fontWeight: FontWeight.w700),
+              errorMaxLines: 2,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             ),

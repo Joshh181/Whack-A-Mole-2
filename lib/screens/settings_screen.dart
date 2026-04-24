@@ -4,6 +4,7 @@ import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/level_provider.dart';
+import '../providers/game_provider.dart';
 import 'auth/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -77,6 +78,14 @@ class SettingsScreen extends StatelessWidget {
                               onChanged: (_) => settings.toggleBackgroundMusic(),
                             ),
                           ),
+                          _GlassSettingTile(
+                            icon: Icons.vibration_rounded,
+                            title: 'Haptic Feedback',
+                            trailing: _PremiumSwitch(
+                              value: settings.hapticFeedback,
+                              onChanged: (_) => settings.toggleHapticFeedback(),
+                            ),
+                          ),
                           
                           const SizedBox(height: 24),
                           _buildSectionTitle('NOTIFICATIONS'),
@@ -88,12 +97,17 @@ class SettingsScreen extends StatelessWidget {
                               onChanged: (_) => settings.togglePushNotifications(),
                             ),
                           ),
-                          
                           const SizedBox(height: 24),
-                          _buildSectionTitle('GENERAL'),
-                          _GlassLanguageTile(
-                            currentLanguage: settings.language,
-                            onChanged: (val) => settings.setLanguage(val!),
+                          _buildSectionTitle('SUPPORT & LEGAL'),
+                          _SupportTile(
+                            icon: Icons.policy_rounded,
+                            title: 'Privacy Policy',
+                            onTap: () => _showPrivacyPolicy(context),
+                          ),
+                          _SupportTile(
+                            icon: Icons.contact_support_rounded,
+                            title: 'Contact Support',
+                            onTap: () => _showContactSupport(context),
                           ),
                           
                           const SizedBox(height: 24),
@@ -157,14 +171,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           SizedBox(height: 4),
           Text(
-            'Version 1.0.0 Premium',
+            'Version 1.0.0',
             style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 16),
-          Text(
-            'Made with ❤️ for Ultimate Fun',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
-          ),
+          SizedBox(height: 1),
         ],
       ),
     );
@@ -198,6 +208,15 @@ class SettingsScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () async {
                   final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+                  final levelProvider = Provider.of<LevelProvider>(context, listen: false);
+                  final gameProvider = Provider.of<GameProvider>(context, listen: false);
+                  
+                  // Reset providers memory state before sign out
+                  shopProvider.resetData();
+                  levelProvider.clearCache();
+                  gameProvider.resetData();
+                  
                   await authProvider.signOut();
                   if (context.mounted) {
                     Navigator.of(context).pushAndRemoveUntil(
@@ -278,9 +297,11 @@ class SettingsScreen extends StatelessWidget {
       final shopProvider = Provider.of<ShopProvider>(context, listen: false);
       final levelProvider = Provider.of<LevelProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final gameProvider = Provider.of<GameProvider>(context, listen: false);
 
-      await shopProvider.resetData();
+      shopProvider.resetData();
       levelProvider.resetAllLevels();
+      gameProvider.resetData();
       final success = await authProvider.deleteAccount();
 
       if (context.mounted) {
@@ -298,6 +319,55 @@ class SettingsScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       }
     }
+  }
+
+  void _showPrivacyPolicy(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _GlassSheet(
+        title: 'PRIVACY POLICY',
+        content: '''
+Last Updated: April 2026
+
+1. DATA COLLECTION
+We only collect basic game progress data (high scores, coins, and unlocked skins) to provide you with a persistent gaming experience.
+
+2. LOCAL STORAGE
+All game settings and progress are stored locally on your device using shared preferences and may be synced if you use our cloud services.
+
+3. THIRD PARTY SERVICES
+We do not sell your data. We use standard analytical tools to improve game performance and identify bugs.
+
+4. USER RIGHTS
+You can request account deletion at any time via the Settings menu, which will permanently remove all your data from our servers.
+        ''',
+      ),
+    );
+  }
+
+  void _showContactSupport(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _GlassSheet(
+        title: 'CONTACT SUPPORT',
+        content: '''
+Need help with your moles?
+
+📧 EMAIL US:
+support@whackamole.game
+
+🕒 RESPONSE TIME:
+We typically respond within 24-48 hours.
+
+💡 TIP:
+Include your User ID in the email for faster service. You can find your ID in the Account section.
+        ''',
+      ),
+    );
   }
 }
 
@@ -341,54 +411,6 @@ class _GlassSettingTile extends StatelessWidget {
   }
 }
 
-class _GlassLanguageTile extends StatelessWidget {
-  final String currentLanguage;
-  final ValueChanged<String?> onChanged;
-
-  const _GlassLanguageTile({required this.currentLanguage, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.language_rounded, color: Colors.white70, size: 24),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Text(
-              'Language',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Theme(
-            data: Theme.of(context).copyWith(canvasColor: const Color(0xFF2C3E50)),
-            child: DropdownButton<String>(
-              value: currentLanguage,
-              underline: const SizedBox(),
-              style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold),
-              icon: const Icon(Icons.expand_more_rounded, color: Colors.amber),
-              items: ['English', 'Spanish', 'French', 'German']
-                  .map((l) => DropdownMenuItem(value: l, child: Text(l)))
-                  .toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _DangerActionTile extends StatelessWidget {
   final IconData icon;
@@ -446,6 +468,47 @@ class _PremiumSwitch extends StatelessWidget {
   }
 }
 
+class _SupportTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _SupportTile({required this.icon, required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: Colors.white70, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PremiumBackButton extends StatelessWidget {
   final VoidCallback onPressed;
   const _PremiumBackButton({required this.onPressed});
@@ -463,6 +526,76 @@ class _PremiumBackButton extends StatelessWidget {
           border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
         child: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 28),
+      ),
+    );
+  }
+}
+
+class _GlassSheet extends StatelessWidget {
+  final String title;
+  final String content;
+
+  const _GlassSheet({required this.title, required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(40),
+          topRight: Radius.circular(40),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    content,
+                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14, height: 1.6),
+                  ),
+                  const SizedBox(height: 40),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white10,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 0,
+                      ),
+                      child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

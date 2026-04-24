@@ -48,12 +48,16 @@ class WhackAMoleApp extends StatelessWidget {
         // Load shop data when user logs in
         if (authProvider.isAuthenticated) {
           final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+          final levelProvider = Provider.of<LevelProvider>(context, listen: false);
+          final gameProvider = Provider.of<GameProvider>(context, listen: false);
           
           // Only load if not already loaded for this user
-          if (!shopProvider.isInitialized) {
+          if (!shopProvider.isInitialized || !levelProvider.isInitialized || !gameProvider.isInitialized) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               debugPrint('🔄 Loading user data...');
-              shopProvider.loadUserData();
+              if (!shopProvider.isInitialized) shopProvider.loadUserData();
+              if (!levelProvider.isInitialized) levelProvider.loadUserData();
+              if (!gameProvider.isInitialized) gameProvider.loadUserData();
             });
           }
         }

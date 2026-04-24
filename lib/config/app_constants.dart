@@ -50,6 +50,9 @@ class AppConstants {
   static const String keyBackgroundMusic = 'background_music';
   static const String keyPushNotifications = 'push_notifications';
   static const String keyLanguage = 'language';
+  static const String keyHapticFeedback = 'haptic_feedback';
+  static const String keyLevelsData = 'levels_data';
+  static const String keyCurrentLevel = 'current_level';
 
   
 }
