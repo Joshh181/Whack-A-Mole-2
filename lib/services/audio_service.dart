@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'haptic_service.dart';
 
 class AudioService {
   static final AudioService _instance = AudioService._internal();
@@ -93,10 +94,16 @@ class AudioService {
   // ─── GAME SOUND EFFECTS ──────────────────────────────────
 
   /// Play when player whacks a mole successfully
-  Future<void> playWhackSound() => _playEffect('whack.wav');
+  Future<void> playWhackSound() {
+    HapticService().medium();
+    return _playEffect('whack.wav');
+  }
 
   /// Play when player hits a bomb
-  Future<void> playBombSound() => _playEffect('bomb.wav');
+  Future<void> playBombSound() {
+    HapticService().error();
+    return _playEffect('bomb.wav');
+  }
 
   /// Play when game ends with 0 stars
   Future<void> playGameOverSound() => _playEffect('game_over.wav');
@@ -105,10 +112,16 @@ class AudioService {
   Future<void> playGameCompletedSound() => _playEffect('GAME-COMPLETED.wav');
 
   /// Play when tapping any UI button
-  Future<void> playButtonClick() => _playEffect('button_click.wav');
+  Future<void> playButtonClick() {
+    HapticService().selection();
+    return _playEffect('button_click.wav');
+  }
 
   /// Play when activating a power-up
-  Future<void> playPowerUpSound() => _playEffect('powerup.wav');
+  Future<void> playPowerUpSound() {
+    HapticService().light();
+    return _playEffect('powerup.wav');
+  }
 
   /// Play when an action is invalid (e.g. not enough coins)
   Future<void> playError() => _playEffect('game_over.wav');

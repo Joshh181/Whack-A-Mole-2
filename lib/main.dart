@@ -13,6 +13,7 @@ import 'providers/shop_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
+import 'services/haptic_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,10 @@ class WhackAMoleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize HapticService with SettingsProvider
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    HapticService().init(settings);
+
     // ✅ CRITICAL FIX: Load user data when authenticated
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {

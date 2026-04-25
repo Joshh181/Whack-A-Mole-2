@@ -77,7 +77,7 @@ class Level {
           isUnlocked: true,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1070, // 1.07s - Very Easy
+          moleStayDuration: 1050, // 1.05s - Very Easy
           bombChance: 5, // 5% bombs
           bombTimePenalty: 2,
         );
@@ -86,7 +86,7 @@ class Level {
           levelNumber: 2,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1040, // 1.04s
+          moleStayDuration: 1000, // 1.00s
           bombChance: 10, // 10% bombs
           bombTimePenalty: 2,
         );
@@ -95,7 +95,7 @@ class Level {
           levelNumber: 3,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1010, // 1.01s
+          moleStayDuration: 950, // 0.95s
           bombChance: 15, // 15% bombs
           bombTimePenalty: 3,
         );
@@ -104,7 +104,7 @@ class Level {
           levelNumber: 4,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 980, // 0.98s
+          moleStayDuration: 900, // 0.90s
           bombChance: 20, // 20% bombs
           bombTimePenalty: 3,
         );
@@ -113,7 +113,7 @@ class Level {
           levelNumber: 5,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 950, // 0.95s
+          moleStayDuration: 850, // 0.85s
           bombChance: 25, // 25% bombs
           bombTimePenalty: 4,
         );
@@ -126,7 +126,7 @@ class Level {
           levelNumber: 6,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 920, // 0.92s - More holes, faster
+          moleStayDuration: 800, // 0.80s - More holes, faster
           bombChance: 30, // 30% bombs
           bombTimePenalty: 4,
         );
@@ -135,7 +135,7 @@ class Level {
           levelNumber: 7,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 890, // 0.89s
+          moleStayDuration: 750, // 0.75s
           bombChance: 35, // 35% bombs
           bombTimePenalty: 5,
         );
@@ -144,7 +144,7 @@ class Level {
           levelNumber: 8,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 860, // 0.86s
+          moleStayDuration: 700, // 0.70s
           bombChance: 40, // 40% bombs
           bombTimePenalty: 5,
         );
@@ -157,7 +157,7 @@ class Level {
           levelNumber: 9,
           gridRows: 5,
           gridColumns: 5,
-          moleStayDuration: 830, // 0.83s - Very challenging!
+          moleStayDuration: 700, // 0.70s - Very challenging!
           bombChance: 45, // 45% bombs
           bombTimePenalty: 6,
         );
@@ -166,7 +166,7 @@ class Level {
           levelNumber: 10,
           gridRows: 5,
           gridColumns: 5,
-          moleStayDuration: 800, // 0.80s - EXTREME!
+          moleStayDuration: 650, // 0.65s - EXTREME!
           bombChance: 50, // 50% bombs
           bombTimePenalty: 7,
         );

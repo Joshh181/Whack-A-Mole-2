@@ -6,6 +6,7 @@ import '../providers/shop_provider.dart';
 import '../providers/level_provider.dart';
 import '../providers/game_provider.dart';
 import 'auth/login_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -347,25 +348,50 @@ You can request account deletion at any time via the Settings menu, which will p
     );
   }
 
+  Future<void> _launchEmail() async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'josh.lumactod16@gmail.com',
+      query: encodeQueryParameters(<String, String>{
+        'subject': 'Support Request - Whack-a-Mole',
+      }),
+    );
+
+    try {
+      if (await canLaunchUrl(emailLaunchUri)) {
+        await launchUrl(emailLaunchUri);
+      } else {
+        throw 'Could not launch $emailLaunchUri';
+      }
+    } catch (e) {
+      debugPrint('Error launching email: $e');
+    }
+  }
+
+  String? encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+  }
+
   void _showContactSupport(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _GlassSheet(
+      builder: (context) => _SupportSheet(
         title: 'CONTACT SUPPORT',
+        email: 'josh.lumactod16@gmail.com',
         content: '''
 Need help with your moles?
 
-📧 EMAIL US:
-support@whackamole.game
-
-🕒 RESPONSE TIME:
 We typically respond within 24-48 hours.
 
 💡 TIP:
 Include your User ID in the email for faster service. You can find your ID in the Account section.
         ''',
+        onEmailTap: _launchEmail,
       ),
     );
   }
@@ -576,6 +602,137 @@ class _GlassSheet extends StatelessWidget {
                     content,
                     style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14, height: 1.6),
                   ),
+                  const SizedBox(height: 40),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white10,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 0,
+                      ),
+                      child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportSheet extends StatelessWidget {
+  final String title;
+  final String content;
+  final String email;
+  final VoidCallback onEmailTap;
+
+  const _SupportSheet({
+    required this.title,
+    required this.content,
+    required this.email,
+    required this.onEmailTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(40),
+          topRight: Radius.circular(40),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    content,
+                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14, height: 1.6),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Interactive Email Card
+                  GestureDetector(
+                    onTap: onEmailTap,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.email_rounded, color: Colors.amber),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'SEND US AN EMAIL',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  email,
+                                  style: const TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.open_in_new_rounded, color: Colors.white24, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 40),
                   Center(
                     child: ElevatedButton(

@@ -27,6 +27,7 @@ class _GameScreenState extends State<GameScreen> {
   final AudioService _audioService = AudioService();
   final Set<String> _completedAchievements = {};
   bool _scoreSubmitted = false;
+  int _coinsEarned = 0;
   Timer? _powerUpTickTimer;
 
   @override
@@ -77,6 +78,22 @@ class _GameScreenState extends State<GameScreen> {
       }
       if (score > 0) {
         _scoreSubmitted = true;
+        
+        // 💰 Calculate and award coins
+        final shopProvider = Provider.of<ShopProvider>(context, listen: false);
+        int sessionCoins = (score / 10).floor(); // 1 coin per 10 points
+        if (stars == 1) sessionCoins += 10;
+        if (stars == 2) sessionCoins += 25;
+        if (stars == 3) sessionCoins += 50;
+        
+        setState(() {
+          _coinsEarned = sessionCoins;
+        });
+        
+        if (sessionCoins > 0) {
+          shopProvider.addCoins(sessionCoins);
+        }
+
         _submitScoreToLeaderboard(score);
         final levelProvider =
             Provider.of<LevelProvider>(context, listen: false);
@@ -670,13 +687,42 @@ class _GameScreenState extends State<GameScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if (_coinsEarned > 0) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.amber, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🪙', style: TextStyle(fontSize: 20)),
+                    const SizedBox(width: 8),
+                    Text(
+                      '+$_coinsEarned',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    _scoreSubmitted = false;
+                    setState(() {
+                      _scoreSubmitted = false;
+                      _coinsEarned = 0;
+                    });
                     _audioService.playButtonClick();
                     _audioService.playBackgroundMusic();
                     gp.restartGame();
