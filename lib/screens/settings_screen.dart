@@ -7,10 +7,10 @@ import '../providers/level_provider.dart';
 import '../providers/game_provider.dart';
 import 'auth/login_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+// setting screen
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
+// build method 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+          // safe area
           SafeArea(
             child: Column(
               children: [
@@ -140,7 +140,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
+//build section title
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
@@ -155,7 +155,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
+//build credits card
   Widget _buildCreditsCard() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -235,7 +235,7 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-
+// show delete dialog
   void _showPremiumDeleteDialog(BuildContext context) {
     showGeneralDialog(
       context: context,
@@ -286,14 +286,14 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-
+// perform deletion
   void _performDeletion(BuildContext context) async {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.red)),
     );
-
+// perform deletion
     try {
       final shopProvider = Provider.of<ShopProvider>(context, listen: false);
       final levelProvider = Provider.of<LevelProvider>(context, listen: false);
@@ -321,7 +321,7 @@ class SettingsScreen extends StatelessWidget {
       }
     }
   }
-
+// show privacy policy
   void _showPrivacyPolicy(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -347,7 +347,7 @@ You can request account deletion at any time via the Settings menu, which will p
       ),
     );
   }
-
+// launch email
   Future<void> _launchEmail() async {
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
@@ -367,14 +367,14 @@ You can request account deletion at any time via the Settings menu, which will p
       debugPrint('Error launching email: $e');
     }
   }
-
+// encode query parameters
   String? encodeQueryParameters(Map<String, String> params) {
     return params.entries
         .map((MapEntry<String, String> e) =>
             '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
   }
-
+// show contact support
   void _showContactSupport(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -437,7 +437,7 @@ class _GlassSettingTile extends StatelessWidget {
   }
 }
 
-
+// danger action tile
 class _DangerActionTile extends StatelessWidget {
   final IconData icon;
   final String title;

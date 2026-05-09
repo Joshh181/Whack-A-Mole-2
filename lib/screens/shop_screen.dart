@@ -127,7 +127,7 @@ class ShopScreen extends StatelessWidget {
       ),
     );
   }
-
+  // show dialog
   void _showPurchaseDialog(BuildContext context, ShopItem item, ShopProvider shopProvider, AudioService audioService) {
     showGeneralDialog(
       context: context,

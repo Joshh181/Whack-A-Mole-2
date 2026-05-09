@@ -28,6 +28,7 @@ dependencies:
   supabase_flutter: ^2.12.4
   google_fonts: ^8.0.2
   url_launcher: ^6.3.2
+  google_sign_in: ^6.2.2
 
 dependency_overrides:
   app_links: ^7.0.0
