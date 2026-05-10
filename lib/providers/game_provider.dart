@@ -71,10 +71,10 @@ class GameProvider extends ChangeNotifier {
   int _highScore = 0;
   Timer? _gameTimer;
   Timer? _moleTimer;
-  int _currentMoleId = 0;
+  int _nextMoleId = 0;  // Global incrementing ID for mole timeouts
+  final Map<int, int> _moleIds = {};  // hole index -> moleId (for timeout tracking)
   int _totalMolesWhacked = 0;
   int _gamesPlayed = 0;
-  int _currentCombo = 0;
   int _maxCombo = 0;
 
   // ✅ Stores the final score at the moment the game ends — safe to read anytime
@@ -208,8 +208,8 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _checkComboAchievements() {
-    if (_currentCombo >= 15) {
-      _updateAchievement('on_fire', _currentCombo);
+    if (_gameState.comboCount >= 15) {
+      _updateAchievement('on_fire', _gameState.comboCount);
     }
   }
 
@@ -295,6 +295,10 @@ class GameProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Combo getters for UI
+  int get comboCount => _gameState.comboCount;
+  int get comboMultiplier => _gameState.comboMultiplier;
+
   void startGame() {
     _gameState.reset();
     _finalScore = 0; // ✅ Reset final score
@@ -306,11 +310,11 @@ class GameProvider extends ChangeNotifier {
   void startGameWithLevel(Level level) {
     _currentLevel = level;
     _gameState.reset();
-    _finalScore = 0; // ✅ Reset final score
+    _finalScore = 0;
     _gameState.timeRemaining = 50;
     _gameState.isPlaying = true;
-    _currentMoleId = 0;
-    _currentCombo = 0;
+    _nextMoleId = 0;
+    _moleIds.clear();
     _maxCombo = 0;
     _gamesPlayed++;
     _updateAchievement('dedicated_player', _gamesPlayed);
@@ -331,8 +335,9 @@ class GameProvider extends ChangeNotifier {
       }
     });
 
-    int moleDuration = level?.moleStayDuration ?? 1300;
-    _moleTimer = Timer.periodic(Duration(milliseconds: moleDuration + 300), (timer) {
+    // Use level's spawnInterval (how often we TRY to spawn a new mole)
+    int interval = level?.spawnInterval ?? 1300;
+    _moleTimer = Timer.periodic(Duration(milliseconds: interval), (timer) {
       if (!_gameState.isPaused && _gameState.isPlaying) {
         _spawnMole(level);
       }
@@ -345,47 +350,73 @@ class GameProvider extends ChangeNotifier {
 
   void _spawnMole(Level? level) {
     int totalHoles = level?.totalHoles ?? 12;
-    _gameState.activeMoleIndex = _random.nextInt(totalHoles);
+    int maxActive = level?.maxActiveMoles ?? 1;
+    int currentActive = _gameState.activeMoles.length;
 
-    // Determine if the newly spawned mole is actually a bomb
+    // Don't spawn if we're already at capacity
+    if (currentActive >= maxActive) return;
+
+    // Pick a random hole that is NOT currently occupied
+    List<int> availableHoles = [];
+    for (int j = 0; j < totalHoles; j++) {
+      if (!_gameState.activeMoles.containsKey(j)) {
+        availableHoles.add(j);
+      }
+    }
+    if (availableHoles.isEmpty) return;
+
+    int holeIndex = availableHoles[_random.nextInt(availableHoles.length)];
+
+    // Determine if bomb
+    bool isBomb = false;
     if (level != null && level.bombChance > 0) {
-      _gameState.isBomb = _random.nextInt(100) < level.bombChance;
-    } else {
-      _gameState.isBomb = false;
+      isBomb = _random.nextInt(100) < level.bombChance;
     }
 
-    _currentMoleId++;
-    final int thisMoleId = _currentMoleId;
+    // Register this mole
+    _gameState.activeMoles[holeIndex] = isBomb;
+    _nextMoleId++;
+    final int thisMoleId = _nextMoleId;
+    _moleIds[holeIndex] = thisMoleId;
 
-    notifyListeners();
-
+    // Schedule auto-hide after moleStayDuration
     int baseDuration = level?.moleStayDuration ?? 1300;
-    // Apply Slow Mole power-up (index 2) if active
-    int moleStayDuration = _gameState.isPowerUpActive(2) 
-        ? (baseDuration * 1.5).toInt() 
+    int moleStayDuration = _gameState.isPowerUpActive(2)
+        ? (baseDuration * 1.5).toInt()
         : baseDuration;
 
     Future.delayed(Duration(milliseconds: moleStayDuration), () {
-      if (_gameState.activeMoleIndex != -1 && thisMoleId == _currentMoleId) {
-        _gameState.activeMoleIndex = -1;
-        _gameState.isBomb = false;
-        _currentCombo = 0;
+      // Only hide if this specific mole is still there (not already whacked)
+      if (_moleIds[holeIndex] == thisMoleId) {
+        bool wasBomb = _gameState.activeMoles[holeIndex] ?? false;
+        _gameState.activeMoles.remove(holeIndex);
+        _moleIds.remove(holeIndex);
+        // Reset combo on miss (only if it was a non-bomb mole)
+        if (!wasBomb) {
+          _gameState.resetCombo();
+        }
         notifyListeners();
       }
     });
+
+    notifyListeners();
   }
 
   void whackMole(int index) {
-    if (_gameState.activeMoleIndex == index) {
+    if (_gameState.activeMoles.containsKey(index)) {
+      // Increment combo BEFORE addScore so multiplier applies
+      _gameState.incrementCombo();
+
       bool doublePoints = _gameState.isPowerUpActive(1);
       _gameState.addScore(10, doublePoints: doublePoints);
-      _gameState.activeMoleIndex = -1;
-      _currentMoleId++;
+
+      // Remove this mole from active
+      _gameState.activeMoles.remove(index);
+      _moleIds.remove(index);
 
       _totalMolesWhacked++;
-      _currentCombo++;
-      if (_currentCombo > _maxCombo) {
-        _maxCombo = _currentCombo;
+      if (_gameState.comboCount > _maxCombo) {
+        _maxCombo = _gameState.comboCount;
       }
 
       _updateAchievement('first_whack', _totalMolesWhacked);
@@ -401,8 +432,6 @@ class GameProvider extends ChangeNotifier {
     if (_gameState.timeRemaining < 0) {
       _gameState.timeRemaining = 0;
     }
-    _gameState.activeMoleIndex = -1;
-    _currentMoleId++;
     notifyListeners();
   }
 

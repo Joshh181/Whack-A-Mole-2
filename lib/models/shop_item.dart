@@ -1,4 +1,4 @@
-enum ShopItemType { customization, powerUp }
+enum ShopItemType { customization, powerUp, mallet }
 
 class ShopItem {
   final String id;
@@ -42,7 +42,9 @@ class ShopItem {
       iconEmoji: json['iconEmoji'],
       type: json['type'] == 'ShopItemType.customization' 
           ? ShopItemType.customization 
-          : ShopItemType.powerUp,
+          : json['type'] == 'ShopItemType.mallet'
+              ? ShopItemType.mallet
+              : ShopItemType.powerUp,
       description: json['description'],
       imagePath: json['imagePath'],
       isUnlocked: json['isUnlocked'] ?? false,

@@ -10,6 +10,7 @@ class AnimatedMoleHole extends StatefulWidget {
   final int gridColumns;
   final VoidCallback onTap;
   final String moleImagePath;
+  final String bombImagePath;
   final bool isOriginalMole;
 
   const AnimatedMoleHole({
@@ -19,6 +20,7 @@ class AnimatedMoleHole extends StatefulWidget {
     required this.gridColumns,
     required this.onTap,
     required this.moleImagePath,
+    required this.bombImagePath,
     required this.isOriginalMole,
   });
 
@@ -46,18 +48,6 @@ class _AnimatedMoleHoleState extends State<AnimatedMoleHole>
     if (widget.gridColumns == 3) return -25.0;
     if (widget.gridColumns == 4) return -25.0;
     return -15.0;
-  }
-
-  double get _bombSize {
-    if (widget.gridColumns == 3) return 70.0;
-    if (widget.gridColumns == 4) return 55.0;
-    return 45.0;
-  }
-
-  double get _bombVisibleTop {
-    if (widget.gridColumns == 3) return -1.0;
-    if (widget.gridColumns == 4) return -1.0;
-    return -5.0;
   }
 
   double get _skinOffset {
@@ -168,21 +158,14 @@ class _AnimatedMoleHoleState extends State<AnimatedMoleHole>
               final double scale = (0.7 + popVal * 0.3).clamp(0.0, 1.15);
 
               // ── Resolve image path & size ──
-              final double size;
-              final double topPos;
-              final String imagePath;
-
-              if (widget.hasBomb) {
-                size = _bombSize;
-                topPos = _bombVisibleTop;
-                imagePath = 'assets/images/bomb.png';
-              } else {
-                size = widget.isOriginalMole ? _moleSize : _moleSize * 0.60;
-                topPos = widget.isOriginalMole
-                    ? _visibleTop
-                    : _visibleTop + _skinOffset;
-                imagePath = widget.moleImagePath;
-              }
+              final double size = widget.isOriginalMole ? _moleSize : _moleSize * 0.60;
+              final double topPos = widget.isOriginalMole
+                  ? _visibleTop
+                  : _visibleTop + _skinOffset;
+              
+              final String imagePath = widget.hasBomb 
+                  ? widget.bombImagePath 
+                  : widget.moleImagePath;
 
               return Positioned(
                 top: topPos,

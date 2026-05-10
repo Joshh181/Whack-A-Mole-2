@@ -73,7 +73,7 @@ class WhackAMoleApp extends StatelessWidget {
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
-            textTheme: GoogleFonts.lilitaOneTextTheme(),
+            textTheme: GoogleFonts.fredokaTextTheme(),
           ),
           home: const SplashScreen(),
         );

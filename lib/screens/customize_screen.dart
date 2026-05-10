@@ -14,6 +14,9 @@ class CustomizeScreen extends StatelessWidget {
     final ownedSkins = shopProvider.items
         .where((item) => item.type == ShopItemType.customization && item.isUnlocked)
         .toList();
+    final ownedMallets = shopProvider.items
+        .where((item) => item.type == ShopItemType.mallet && item.isUnlocked)
+        .toList();
 
     return Scaffold(
       body: Stack(
@@ -67,7 +70,7 @@ class CustomizeScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              'EQUIP YOUR LEGENDARY SKINS',
+                              'EQUIP YOUR LEGENDARY GEAR',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -78,90 +81,190 @@ class CustomizeScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
                       
-                      // Active Skin Preview
-                      Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.purple.withOpacity(0.3),
-                              blurRadius: 40,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: (shopProvider.equippedSkin == null || shopProvider.equippedSkin!.isEmpty)
-                              ? Image.asset('assets/images/MOLEE.png', width: 120, height: 120, fit: BoxFit.contain)
-                              : Image.asset(
-                                  shopProvider.items.firstWhere((i) => i.id == shopProvider.equippedSkin).imagePath ?? 'assets/images/MOLEE.png',
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) => Text(
-                                    shopProvider.items.firstWhere((i) => i.id == shopProvider.equippedSkin).iconEmoji,
-                                    style: const TextStyle(fontSize: 80),
-                                  ),
+                      // Active Skin + Mallet Preview Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Skin Preview
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purple.withOpacity(0.3),
+                                  blurRadius: 30,
+                                  spreadRadius: 5,
                                 ),
-                        ),
+                              ],
+                            ),
+                            child: Center(
+                              child: (shopProvider.equippedSkin == null || shopProvider.equippedSkin!.isEmpty)
+                                  ? Image.asset('assets/images/MOLEE.png', width: 85, height: 85, fit: BoxFit.contain)
+                                  : Image.asset(
+                                      shopProvider.items.firstWhere((i) => i.id == shopProvider.equippedSkin).imagePath ?? 'assets/images/MOLEE.png',
+                                      width: 85,
+                                      height: 85,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) => Text(
+                                        shopProvider.items.firstWhere((i) => i.id == shopProvider.equippedSkin).iconEmoji,
+                                        style: const TextStyle(fontSize: 60),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          // Mallet Preview
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  blurRadius: 30,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                shopProvider.getEquippedMalletEmoji(),
+                                style: const TextStyle(fontSize: 50),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
                 
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
                 
-                // ─── SKIN GRID ──────────────────────────────
+                // ─── SKINS + MALLETS SECTIONS ────────────────
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.2),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
                     ),
-                    child: GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(28, 40, 28, 40),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 0.85,
-                        crossAxisSpacing: 20,
-                        mainAxisSpacing: 20,
-                      ),
-                      itemCount: ownedSkins.length + 1, // +1 for default
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          // Default Skin
-                          final isEquipped = shopProvider.equippedSkin == null || shopProvider.equippedSkin!.isEmpty;
-                          return _SkinCard(
-                            imagePath: 'assets/images/MOLEE.png',
-                            name: 'DEFAULT',
-                            isEquipped: isEquipped,
-                            onTap: () {
-                              audioService.playButtonClick();
-                              shopProvider.equipSkin('');
-                            },
-                          );
-                        }
-                        
-                        final item = ownedSkins[index - 1];
-                        final isEquipped = shopProvider.equippedSkin == item.id;
-                        
-                        return _SkinCard(
-                          imagePath: item.imagePath,
-                          iconEmoji: item.iconEmoji,
-                          name: item.name.split(' ').first.toUpperCase(),
-                          isEquipped: isEquipped,
-                          onTap: () {
-                            audioService.playButtonClick();
-                            shopProvider.equipSkin(item.id);
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(28, 30, 28, 40),
+                      children: [
+                        // ── SKINS HEADER ──
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            '🎭  SKINS',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                        // ── SKINS GRID ──
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            childAspectRatio: 0.85,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                          ),
+                          itemCount: ownedSkins.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              final isEquipped = shopProvider.equippedSkin == null || shopProvider.equippedSkin!.isEmpty;
+                              return _SkinCard(
+                                imagePath: 'assets/images/MOLEE.png',
+                                name: 'DEFAULT',
+                                isEquipped: isEquipped,
+                                onTap: () {
+                                  audioService.playButtonClick();
+                                  shopProvider.equipSkin('');
+                                },
+                              );
+                            }
+                            final item = ownedSkins[index - 1];
+                            final isEquipped = shopProvider.equippedSkin == item.id;
+                            return _SkinCard(
+                              imagePath: item.imagePath,
+                              iconEmoji: item.iconEmoji,
+                              name: item.name.split(' ').first.toUpperCase(),
+                              isEquipped: isEquipped,
+                              onTap: () {
+                                audioService.playButtonClick();
+                                shopProvider.equipSkin(item.id);
+                              },
+                            );
                           },
-                        );
-                      },
+                        ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // ── MALLETS HEADER ──
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            '🔨  MALLETS',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                        // ── MALLETS GRID ──
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            childAspectRatio: 0.85,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                          ),
+                          itemCount: ownedMallets.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              final isEquipped = shopProvider.equippedMallet == null || shopProvider.equippedMallet!.isEmpty;
+                              return _SkinCard(
+                                iconEmoji: '🔨',
+                                name: 'DEFAULT',
+                                isEquipped: isEquipped,
+                                onTap: () {
+                                  audioService.playButtonClick();
+                                  shopProvider.equipMallet('');
+                                },
+                              );
+                            }
+                            final item = ownedMallets[index - 1];
+                            final isEquipped = shopProvider.equippedMallet == item.id;
+                            return _SkinCard(
+                              iconEmoji: item.iconEmoji,
+                              name: item.name.split(' ').first.toUpperCase(),
+                              isEquipped: isEquipped,
+                              onTap: () {
+                                audioService.playButtonClick();
+                                shopProvider.equipMallet(item.id);
+                              },
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),

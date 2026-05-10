@@ -9,6 +9,7 @@ import '../models/level.dart';
 import '../config/app_colors.dart';
 import '../widgets/pause_dialog.dart';
 import '../widgets/animated_mole_hole.dart';
+import '../widgets/floating_score_text.dart';
 import 'dart:math';
 import '../providers/level_provider.dart';
 import '../services/audio_service.dart';
@@ -29,6 +30,16 @@ class _GameScreenState extends State<GameScreen> {
   bool _scoreSubmitted = false;
   int _coinsEarned = 0;
   Timer? _powerUpTickTimer;
+
+  // Floating score text overlays
+  final List<Widget> _floatingTexts = [];
+  int _floatingTextId = 0;
+
+  // Mallet smash animation state
+  final Map<int, _MalletSmash> _malletSmashes = {};
+
+  // Grid key for position calculations
+  final GlobalKey _gridKey = GlobalKey();
 
   @override
   void initState() {
@@ -285,141 +296,235 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildGameScreen(GameProvider gp) {
-    return Column(
+    return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'LV ${widget.level.levelNumber}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${gp.gameState.currentScore}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Consumer<ShopProvider>(
-                builder: (context, shopProvider, child) {
-                  return Container(
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.teal.shade400,
-                      borderRadius: BorderRadius.circular(25),
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('🪙', style: TextStyle(fontSize: 24)),
-                        const SizedBox(width: 8),
                         Text(
-                          '${shopProvider.coins}',
+                          'LV ${widget.level.levelNumber}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${gp.gameState.currentScore}',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Colors.red,
                           ),
                         ),
                       ],
                     ),
-                  );
-                },
+                  ),
+                  // ═══ COMBO INDICATOR ═══
+                  if (gp.comboCount >= 2)
+                    _buildComboIndicator(gp),
+                  Consumer<ShopProvider>(
+                    builder: (context, shopProvider, child) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade400,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🪙', style: TextStyle(fontSize: 24)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${shopProvider.coins}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      gp.pauseGame();
+                      _audioService.pauseBackgroundMusic();
+                      _showPauseDialog();
+                    },
+                    icon: const Icon(
+                      Icons.pause,
+                      size: 36,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: () {
-                  gp.pauseGame();
-                  _audioService.pauseBackgroundMusic();
-                  _showPauseDialog();
-                },
-                icon: const Icon(
-                  Icons.pause,
-                  size: 36,
-                  color: Colors.blue,
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8, right: 8, top: 160),
+                child: GridView.builder(
+                  key: _gridKey,
+                  physics: const NeverScrollableScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: widget.level.gridColumns,
+                    crossAxisSpacing: 3,
+                    mainAxisSpacing: 3,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: widget.level.totalHoles,
+                  itemBuilder: (context, index) {
+                    bool isMoleActive = gp.gameState.activeMoles.containsKey(index);
+                    bool hasBomb = gp.gameState.activeMoles[index] == true;
+
+                    return _buildHole(index, isMoleActive, hasBomb, gp);
+                  },
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, top: 160),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              clipBehavior: Clip.none,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: widget.level.gridColumns,
-                crossAxisSpacing: 3,
-                mainAxisSpacing: 3,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: widget.level.totalHoles,
-              itemBuilder: (context, index) {
-                bool isMoleActive = gp.gameState.activeMoleIndex == index;
-                bool hasBomb = isMoleActive && gp.gameState.isBomb;
-
-                return _buildHole(index, isMoleActive, hasBomb, gp);
-              },
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: gp.gameState.timeRemaining / 50,
+                      minHeight: 30,
+                      backgroundColor: Colors.grey.shade300,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        gp.gameState.timeRemaining > 10
+                            ? Colors.yellow.shade700
+                            : Colors.red,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${gp.gameState.timeRemaining}s',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildPowerUps(gp),
+            const SizedBox(height: 20),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: gp.gameState.timeRemaining / 50,
-                  minHeight: 30,
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    gp.gameState.timeRemaining > 10
-                        ? Colors.yellow.shade700
-                        : Colors.red,
+        // ═══ FLOATING SCORE TEXT OVERLAYS ═══
+        ..._floatingTexts,
+        // ═══ MALLET SMASH OVERLAYS ═══
+        ..._malletSmashes.entries.map((e) => _buildMalletSmashWidget(e.value)),
+      ],
+    );
+  }
+
+  // ═══ COMBO INDICATOR WIDGET ═══
+  Widget _buildComboIndicator(GameProvider gp) {
+    final combo = gp.comboCount;
+    final multiplier = gp.comboMultiplier;
+
+    Color bgColor;
+    Color textColor;
+    if (multiplier >= 4) {
+      bgColor = Colors.red.shade700;
+      textColor = Colors.white;
+    } else if (multiplier >= 3) {
+      bgColor = Colors.orange.shade700;
+      textColor = Colors.white;
+    } else if (multiplier >= 2) {
+      bgColor = Colors.amber.shade700;
+      textColor = Colors.black87;
+    } else {
+      bgColor = Colors.blue.shade600;
+      textColor = Colors.white;
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.8, end: 1.0),
+      duration: const Duration(milliseconds: 200),
+      key: ValueKey(combo), // restart animation on each combo change
+      curve: Curves.elasticOut,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: bgColor.withOpacity(0.5),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  multiplier >= 3 ? '🔥' : '⚡',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'x$combo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: textColor,
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${gp.gameState.timeRemaining}s',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${multiplier}x',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: textColor,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        _buildPowerUps(gp),
-        const SizedBox(height: 20),
-      ],
+        );
+      },
     );
   }
 
@@ -428,6 +533,7 @@ class _GameScreenState extends State<GameScreen> {
     return Consumer<ShopProvider>(
       builder: (context, shopProvider, child) {
         final moleImagePath = shopProvider.getMoleImagePath();
+        final bombImagePath = shopProvider.getBombImagePath();
         final isOriginalMole = moleImagePath.contains('33121063782.png');
 
         return AnimatedMoleHole(
@@ -436,10 +542,13 @@ class _GameScreenState extends State<GameScreen> {
           hasBomb: hasBomb,
           gridColumns: widget.level.gridColumns,
           moleImagePath: moleImagePath,
+          bombImagePath: bombImagePath,
           isOriginalMole: isOriginalMole,
           onTap: () {
             if (hasBomb) {
               _audioService.playBombSound();
+              // Remove the bomb from active moles before applying penalty
+              gp.gameState.activeMoles.remove(index);
               gp.hitBomb(widget.level.bombTimePenalty);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -452,8 +561,118 @@ class _GameScreenState extends State<GameScreen> {
             } else {
               _audioService.playWhackSound();
               gp.whackMole(index);
+              // Spawn floating text + mallet smash at hit position
+              _spawnFloatingText(context, index, gp);
+              _spawnMalletSmash(context, index, shopProvider);
             }
           },
+        );
+      },
+    );
+  }
+
+  /// Spawns a floating score text at the given hole index position.
+  void _spawnFloatingText(BuildContext ctx, int holeIndex, GameProvider gp) {
+    final pos = _getHoleScreenPosition(holeIndex);
+    if (pos == null) return;
+
+    final id = _floatingTextId++;
+    final widget = FloatingScoreText(
+      key: ValueKey('float_$id'),
+      scoreEarned: gp.gameState.lastScoreEarned,
+      comboCount: gp.comboCount,
+      multiplier: gp.comboMultiplier,
+      position: pos,
+      onComplete: () {
+        if (mounted) {
+          setState(() {
+            _floatingTexts.removeWhere((w) => w.key == ValueKey('float_$id'));
+          });
+        }
+      },
+    );
+
+    setState(() {
+      _floatingTexts.add(widget);
+    });
+  }
+
+  /// Spawns a mallet smash emoji animation at the given hole index position.
+  void _spawnMalletSmash(BuildContext ctx, int holeIndex, ShopProvider shopProvider) {
+    final pos = _getHoleScreenPosition(holeIndex);
+    if (pos == null) return;
+
+    final smash = _MalletSmash(
+      emoji: shopProvider.getEquippedMalletEmoji(),
+      position: pos,
+      createdAt: DateTime.now(),
+    );
+
+    setState(() {
+      _malletSmashes[holeIndex] = smash;
+    });
+
+    // Remove after animation completes
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) {
+        setState(() {
+          _malletSmashes.remove(holeIndex);
+        });
+      }
+    });
+  }
+
+  /// Calculates the screen position of a hole in the grid.
+  Offset? _getHoleScreenPosition(int holeIndex) {
+    final gridBox = _gridKey.currentContext?.findRenderObject() as RenderBox?;
+    if (gridBox == null) return null;
+
+    final gridPos = gridBox.localToGlobal(Offset.zero);
+    final gridWidth = gridBox.size.width;
+    final cols = this.widget.level.gridColumns;
+    final cellWidth = gridWidth / cols;
+
+    final row = holeIndex ~/ cols;
+    final col = holeIndex % cols;
+
+    // Position at center of the cell
+    return Offset(
+      gridPos.dx + (col * cellWidth) + (cellWidth / 2),
+      gridPos.dy + (row * cellWidth) + (cellWidth / 2) - 30,
+    );
+  }
+
+  /// Builds the mallet smash animation widget.
+  Widget _buildMalletSmashWidget(_MalletSmash smash) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('smash_${smash.createdAt.millisecondsSinceEpoch}'),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        // Scale: 2.0 -> 1.0 (slam down), then fade out
+        final scale = 2.0 - value;
+        final opacity = (1.0 - value).clamp(0.0, 1.0);
+        final rotation = -0.4 + (value * 0.4); // swing from -0.4 rad to 0
+
+        return Positioned(
+          left: smash.position.dx - 25,
+          top: smash.position.dy - 30,
+          child: IgnorePointer(
+            child: Opacity(
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: Transform.rotate(
+                  angle: rotation,
+                  child: Text(
+                    smash.emoji,
+                    style: const TextStyle(fontSize: 40),
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -777,4 +996,17 @@ class _GameScreenState extends State<GameScreen> {
       builder: (context) => const PauseDialog(),
     );
   }
+}
+
+/// Simple data class for mallet smash animations.
+class _MalletSmash {
+  final String emoji;
+  final Offset position;
+  final DateTime createdAt;
+
+  _MalletSmash({
+    required this.emoji,
+    required this.position,
+    required this.createdAt,
+  });
 }

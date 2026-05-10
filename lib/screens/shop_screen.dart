@@ -94,7 +94,8 @@ class ShopScreen extends StatelessWidget {
                       final item = items[index];
                       // For skins, check isUnlocked. For powerups, they are always "unlocked" but have counts.
                       final isSkin = item.type == ShopItemType.customization;
-                      final isOwned = isSkin && item.isUnlocked;
+                      final isMallet = item.type == ShopItemType.mallet;
+                      final isOwned = (isSkin || isMallet) && item.isUnlocked;
                       
                       return _ShopItemCard(
                         item: item,

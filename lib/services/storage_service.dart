@@ -96,6 +96,20 @@ class StorageService {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
+  // EQUIPPED MALLET
+  // ════════════════════════════════════════════════════════════════════════════
+
+  Future<String?> getEquippedMallet() async {
+    final p = await prefs;
+    return p.getString(_userKey('equipped_mallet'));
+  }
+
+  Future<void> saveEquippedMallet(String malletId) async {
+    final p = await prefs;
+    await p.setString(_userKey('equipped_mallet'), malletId);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
   // POWER-UP QUANTITIES
   // ════════════════════════════════════════════════════════════════════════════
 

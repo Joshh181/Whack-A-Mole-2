@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/storage_service.dart';
 
+// authprovider class for handling authentication
 class AuthProvider with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
   final StorageService _storage = StorageService();
@@ -20,7 +21,7 @@ class AuthProvider with ChangeNotifier {
   AuthProvider() {
     _initAuth();
   }
-
+// init auth
   Future<void> _initAuth() async {
     _isLoading = true;
     notifyListeners();
@@ -50,7 +51,7 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
+// sign in method
   Future<bool> signIn(String email, String password) async {
     try {
       _errorMessage = null;
@@ -69,7 +70,7 @@ class AuthProvider with ChangeNotifier {
         debugPrint('✅ User logged in: ${_currentUser!.id}');
         debugPrint('📧 Email: ${_currentUser!.email}');
       }
-      
+     // loading state 
       _isLoading = false;
       notifyListeners();
       return true;
@@ -85,7 +86,7 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
-
+// sign up method
   Future<bool> signUp({
     required String username,
     required String email,
@@ -103,7 +104,7 @@ class AuthProvider with ChangeNotifier {
       );
 
       _currentUser = response.user;
-      
+      // user profile creation
       if (_currentUser != null) {
         _storage.setUserId(_currentUser!.id);
         debugPrint('✅ New user created: ${_currentUser!.id}');
@@ -129,6 +130,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+// google sign in method 
   Future<bool> signInWithGoogle() async {
     try {
       _errorMessage = null;
@@ -152,7 +154,7 @@ class AuthProvider with ChangeNotifier {
 
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
-
+// token check
       if (idToken == null) {
         _errorMessage = 'Could not get Google ID token';
         _isLoading = false;
@@ -168,6 +170,7 @@ class AuthProvider with ChangeNotifier {
 
       _currentUser = response.user;
 
+// user profile
       if (_currentUser != null) {
         _storage.setUserId(_currentUser!.id);
         debugPrint('✅ Google Sign-In successful: ${_currentUser!.id}');
@@ -178,7 +181,7 @@ class AuthProvider with ChangeNotifier {
             googleUser.email.split('@').first;
         await _createUserProfileIfNeeded(displayName);
       }
-
+// loading state off
       _isLoading = false;
       notifyListeners();
       return true;
@@ -212,7 +215,7 @@ class AuthProvider with ChangeNotifier {
       debugPrint('Error checking/creating profile: $e');
     }
   }
-
+// create user profile method
   Future<void> _createUserProfile(String username) async {
     try {
       await _supabase.from('profiles').insert({
@@ -253,7 +256,7 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-
+// reset password method
   Future<bool> resetPassword(String email) async {
     try {
       _errorMessage = null;
@@ -269,7 +272,7 @@ class AuthProvider with ChangeNotifier {
       return false;
     }
   }
-
+// delete account method
   Future<bool> deleteAccount() async {
     try {
       final userId = _currentUser?.id;

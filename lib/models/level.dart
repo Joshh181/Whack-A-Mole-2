@@ -9,6 +9,8 @@ class Level {
   final int moleStayDuration;
   final int bombChance;
   final int bombTimePenalty;
+  final int maxActiveMoles;  // Max moles on screen at once
+  final int spawnInterval;   // ms between spawn attempts
 
   Level({
     required this.levelNumber,
@@ -20,6 +22,8 @@ class Level {
     required this.moleStayDuration,
     required this.bombChance,
     required this.bombTimePenalty,
+    this.maxActiveMoles = 1,
+    this.spawnInterval = 1300,
   });
 
   int get totalHoles => gridRows * gridColumns;
@@ -49,6 +53,8 @@ class Level {
       'moleStayDuration': moleStayDuration,
       'bombChance': bombChance,
       'bombTimePenalty': bombTimePenalty,
+      'maxActiveMoles': maxActiveMoles,
+      'spawnInterval': spawnInterval,
     };
   }
 
@@ -63,6 +69,8 @@ class Level {
       moleStayDuration: json['moleStayDuration'] ?? 1000,
       bombChance: json['bombChance'] ?? 10,
       bombTimePenalty: json['bombTimePenalty'] ?? 3,
+      maxActiveMoles: json['maxActiveMoles'] ?? 1,
+      spawnInterval: json['spawnInterval'] ?? 1300,
     );
   }
 
@@ -77,45 +85,55 @@ class Level {
           isUnlocked: true,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1050, // 1.05s - Very Easy
-          bombChance: 5, // 5% bombs
+          moleStayDuration: 1200,
+          bombChance: 5,
           bombTimePenalty: 2,
+          maxActiveMoles: 1,
+          spawnInterval: 1300,
         );
       case 2:
         return Level(
           levelNumber: 2,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 1000, // 1.00s
-          bombChance: 10, // 10% bombs
+          moleStayDuration: 1150,
+          bombChance: 10,
           bombTimePenalty: 2,
+          maxActiveMoles: 1,
+          spawnInterval: 1250,
         );
       case 3:
         return Level(
           levelNumber: 3,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 950, // 0.95s
-          bombChance: 15, // 15% bombs
+          moleStayDuration: 1100,
+          bombChance: 15,
           bombTimePenalty: 3,
+          maxActiveMoles: 1,
+          spawnInterval: 1200,
         );
       case 4:
         return Level(
           levelNumber: 4,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 900, // 0.90s
-          bombChance: 20, // 20% bombs
+          moleStayDuration: 1050,
+          bombChance: 20,
           bombTimePenalty: 3,
+          maxActiveMoles: 1,
+          spawnInterval: 1150,
         );
       case 5:
         return Level(
           levelNumber: 5,
           gridRows: 3,
           gridColumns: 3,
-          moleStayDuration: 850, // 0.85s
-          bombChance: 25, // 25% bombs
+          moleStayDuration: 1000,
+          bombChance: 25,
           bombTimePenalty: 4,
+          maxActiveMoles: 2,
+          spawnInterval: 600, // Overlap!
         );
 
       // ═══════════════════════════════════════════════════════════
@@ -126,27 +144,33 @@ class Level {
           levelNumber: 6,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 800, // 0.80s - More holes, faster
-          bombChance: 30, // 30% bombs
+          moleStayDuration: 950,
+          bombChance: 30,
           bombTimePenalty: 4,
+          maxActiveMoles: 2,
+          spawnInterval: 550,
         );
       case 7:
         return Level(
           levelNumber: 7,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 750, // 0.75s
-          bombChance: 35, // 35% bombs
+          moleStayDuration: 900,
+          bombChance: 35,
           bombTimePenalty: 5,
+          maxActiveMoles: 2,
+          spawnInterval: 500,
         );
       case 8:
         return Level(
           levelNumber: 8,
           gridRows: 4,
           gridColumns: 4,
-          moleStayDuration: 700, // 0.70s
-          bombChance: 40, // 40% bombs
+          moleStayDuration: 900,
+          bombChance: 40,
           bombTimePenalty: 5,
+          maxActiveMoles: 3,
+          spawnInterval: 350, // Fast enough for 3 overlapping moles
         );
 
       // ═══════════════════════════════════════════════════════════
@@ -157,18 +181,22 @@ class Level {
           levelNumber: 9,
           gridRows: 5,
           gridColumns: 5,
-          moleStayDuration: 700, // 0.70s - Very challenging!
-          bombChance: 45, // 45% bombs
+          moleStayDuration: 850,
+          bombChance: 45,
           bombTimePenalty: 6,
+          maxActiveMoles: 3,
+          spawnInterval: 320,
         );
       case 10:
         return Level(
           levelNumber: 10,
           gridRows: 5,
           gridColumns: 5,
-          moleStayDuration: 650, // 0.65s - EXTREME!
-          bombChance: 50, // 50% bombs
+          moleStayDuration: 800,
+          bombChance: 50,
           bombTimePenalty: 7,
+          maxActiveMoles: 3,
+          spawnInterval: 290,
         );
 
       default:

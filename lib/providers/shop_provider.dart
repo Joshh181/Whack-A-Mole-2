@@ -10,6 +10,7 @@ class ShopProvider extends ChangeNotifier {
   List<DailyReward> _dailyRewards = [];
   int _coins = 150;
   String? _equippedSkin;
+  String? _equippedMallet;
   int _currentStreak = 0;
   DateTime? _lastClaimDate;
   bool _isInitialized = false; // NEW: Track if data is loaded
@@ -28,6 +29,7 @@ class ShopProvider extends ChangeNotifier {
   int get currentStreak => _currentStreak;
   String? get equippedItem => _equippedSkin;
   String? get equippedSkin => _equippedSkin;
+  String? get equippedMallet => _equippedMallet;
   bool get isInitialized => _isInitialized; // NEW: Check if loaded
 
   ShopProvider() {
@@ -49,6 +51,7 @@ class ShopProvider extends ChangeNotifier {
     debugPrint('🔄 Resetting shop data...');
     _coins = 150;
     _equippedSkin = null;
+    _equippedMallet = null;
     _currentStreak = 0;
     _lastClaimDate = null;
     _isInitialized = false;
@@ -139,6 +142,32 @@ class ShopProvider extends ChangeNotifier {
         type: ShopItemType.powerUp,
         description: 'Slower moles for 10s',
       ),
+
+      // ═══ MALLETS ═══
+      ShopItem(
+        id: 'mallet_frying_pan',
+        name: 'Frying Pan',
+        price: 200,
+        iconEmoji: '🍳',
+        type: ShopItemType.mallet,
+        description: 'Smack em with style!',
+      ),
+      ShopItem(
+        id: 'mallet_golden',
+        name: 'Golden Hammer',
+        price: 350,
+        iconEmoji: '🔨',
+        type: ShopItemType.mallet,
+        description: 'Pure gold power!',
+      ),
+      ShopItem(
+        id: 'mallet_mjolnir',
+        name: 'Mjolnir',
+        price: 500,
+        iconEmoji: '⚡',
+        type: ShopItemType.mallet,
+        description: 'Thunder strikes!',
+      ),
     ];
   }
 
@@ -168,6 +197,9 @@ class ShopProvider extends ChangeNotifier {
       
       _equippedSkin = await _storage.getEquippedItem();
       debugPrint('👕 Loaded equipped skin: $_equippedSkin');
+
+      _equippedMallet = await _storage.getEquippedMallet();
+      debugPrint('🔨 Loaded equipped mallet: $_equippedMallet');
       
       _powerUpQuantities = await _storage.getPowerUpQuantities();
       debugPrint('⚡ Loaded power-ups: $_powerUpQuantities');
@@ -229,6 +261,10 @@ class ShopProvider extends ChangeNotifier {
     if (_equippedSkin != null) {
       await _storage.saveEquippedItem(_equippedSkin!);
     }
+
+    if (_equippedMallet != null) {
+      await _storage.saveEquippedMallet(_equippedMallet!);
+    }
     
     await _storage.savePowerUpQuantities(_powerUpQuantities);
   }
@@ -239,7 +275,7 @@ class ShopProvider extends ChangeNotifier {
     if (_coins >= item.price) {
       _coins -= item.price;
       
-      if (item.type == ShopItemType.customization) {
+      if (item.type == ShopItemType.customization || item.type == ShopItemType.mallet) {
         item.isUnlocked = true;
       } else {
         _powerUpQuantities[itemId] = (_powerUpQuantities[itemId] ?? 0) + 1;
@@ -281,12 +317,34 @@ class ShopProvider extends ChangeNotifier {
     ).toList();
   }
 
+  List<ShopItem> getMalletItems() {
+    return _items.where((item) => item.type == ShopItemType.mallet).toList();
+  }
+
   List<ShopItem> getPowerUpItems() {
     return _items.where((item) => item.type == ShopItemType.powerUp).toList();
   }
 
   int getPowerUpCount(String powerUpId) {
     return _powerUpQuantities[powerUpId] ?? 0;
+  }
+
+  void equipMallet(String malletId) {
+    _equippedMallet = malletId;
+    _saveShopData();
+    notifyListeners();
+  }
+
+  /// Returns the emoji for the currently equipped mallet, or default hammer.
+  String getEquippedMalletEmoji() {
+    if (_equippedMallet == null || _equippedMallet!.isEmpty) {
+      return '🔨';
+    }
+    final mallet = _items.firstWhere(
+      (item) => item.id == _equippedMallet,
+      orElse: () => _items.first,
+    );
+    return mallet.iconEmoji;
   }
 
   bool usePowerUp(String powerUpId) {
@@ -311,6 +369,25 @@ class ShopProvider extends ChangeNotifier {
     );
     
     return skin.imagePath ?? 'assets/images/33121063782.png';
+  }
+
+  String getBombImagePath() {
+    if (_equippedSkin == null || _equippedSkin!.isEmpty) {
+      return 'assets/images/mole bomb.png';
+    }
+    
+    switch (_equippedSkin) {
+      case 'skin_cowboy':
+        return 'assets/images/cowboy bomb.png';
+      case 'skin_ninja':
+        return 'assets/images/ninja bomb.png';
+      case 'skin_pirate':
+        return 'assets/images/pirate bomb.png';
+      case 'skin_wizard':
+        return 'assets/images/wizard bomb.png';
+      default:
+        return 'assets/images/mole bomb.png';
+    }
   }
 
   // ─── Daily Rewards ───────────────────────────────────────────────────────────
