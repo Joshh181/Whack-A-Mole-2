@@ -234,6 +234,13 @@ class AuthProvider with ChangeNotifier {
       await _storage.clearUserData();
       debugPrint('✅ User data cleared from storage');
       
+      // Sign out from Google to clear the cached session
+      try {
+        await GoogleSignIn().signOut();
+      } catch (e) {
+        debugPrint('⚠️ Google sign out error: $e');
+      }
+
       // Sign out from Supabase
       await _supabase.auth.signOut();
       _currentUser = null;
@@ -282,7 +289,14 @@ class AuthProvider with ChangeNotifier {
       await _storage.clearUserData();
       debugPrint('✅ Local user data cleared');
 
-      // 3. Clear local session (the account is already deleted from auth.users)
+      // 3. Clear Google Sign-In session to prevent auto-login next time
+      try {
+        await GoogleSignIn().signOut();
+      } catch (e) {
+        debugPrint('⚠️ Google sign out error: $e');
+      }
+
+      // 4. Clear local session (the account is already deleted from auth.users)
       _currentUser = null;
       debugPrint('✅ Local user session cleared');
 
