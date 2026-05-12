@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
@@ -17,10 +18,12 @@ import 'services/haptic_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+// load .env file
+  await dotenv.load(fileName: ".env");
+// Initialize Supabase
   await Supabase.initialize(
-    url: 'https://ubsxqnlclqwbufbfyolh.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVic3hxbmxjbHF3YnVmYmZ5b2xoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMDU3MjYsImV4cCI6MjA4NTU4MTcyNn0.xDuNvwoNk-7O0zfLiAQ3lBNCCOEO8EkV9MbLWiKtHgA',
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(
@@ -37,7 +40,7 @@ void main() async {
     ),
   );
 }
-
+// whack a mole app
 class WhackAMoleApp extends StatelessWidget {
   const WhackAMoleApp({super.key});
 

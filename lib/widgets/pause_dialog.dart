@@ -7,7 +7,7 @@ import '../services/audio_service.dart';
 
 class PauseDialog extends StatelessWidget {
   const PauseDialog({super.key});
-
+// pause dialog
   @override
   Widget build(BuildContext context) {
     final audioService = AudioService();
@@ -75,7 +75,7 @@ class PauseDialog extends StatelessWidget {
     );
   }
 }
-
+//  pause button
 class _PauseButton extends StatelessWidget {
   final String label;
   final Color color;
