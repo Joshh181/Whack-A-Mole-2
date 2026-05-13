@@ -48,7 +48,7 @@ class AppConstants {
   static const String keyLastLoginDate = 'last_login_date';
   static const String keySoundEffects = 'sound_effects';
   static const String keyBackgroundMusic = 'background_music';
-  static const String keyPushNotifications = 'push_notifications';
+
   static const String keyLanguage = 'language';
   static const String keyHapticFeedback = 'haptic_feedback';
   static const String keyLevelsData = 'levels_data';

@@ -88,16 +88,7 @@ class SettingsScreen extends StatelessWidget {
                             ),
                           ),
                           
-                          const SizedBox(height: 24),
-                          _buildSectionTitle('NOTIFICATIONS'),
-                          _GlassSettingTile(
-                            icon: Icons.notifications_active_rounded,
-                            title: 'Push Notifications',
-                            trailing: _PremiumSwitch(
-                              value: settings.pushNotifications,
-                              onChanged: (_) => settings.togglePushNotifications(),
-                            ),
-                          ),
+
                           const SizedBox(height: 24),
                           _buildSectionTitle('SUPPORT & LEGAL'),
                           _SupportTile(
